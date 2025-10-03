@@ -125,82 +125,113 @@ class _ProgressScreenState extends State<ProgressScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                AppText(
-                                  'Weight Trend',
-                                  type: AppTextType.headingSmall,
-                                  color: FitLifeTheme.primaryText,
-                                  useCleanStyle: true,
-                                ),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.monitor_weight,
+                                    color: FitLifeTheme.accentGreen,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: FitLifeTheme.spacingS),
+                                  AppText(
+                                    'Weight Trend',
+                                    type: AppTextType.bodyLarge,
+                                    color: FitLifeTheme.primaryText,
+                                    useCleanStyle: true,
+                                  ),
+                                ],
+                              ),
                                 const SizedBox(height: FitLifeTheme.spacingL),
                                 if (hasRecentCheckIns) ...[
                                   SizedBox(
-                                    height: 100,
+                                    height: 200,
                                     child: LineChart(
                                       LineChartData(
-                                        gridData: FlGridData(show: false), // Transparent background, no grid lines
+                                        gridData: FlGridData(
+                                          show: true,
+                                          drawVerticalLine: false,
+                                          horizontalInterval: 5,
+                                          getDrawingHorizontalLine: (value) {
+                                            return FlLine(
+                                              color: FitLifeTheme.dividerColor,
+                                              strokeWidth: 1,
+                                            );
+                                          },
+                                        ),
                                         titlesData: FlTitlesData(
-                                          leftTitles: AxisTitles(
-                                            sideTitles: SideTitles(showTitles: false), // Hide Y-axis labels for clean look
-                                          ),
+                                          show: true,
+                                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                                           bottomTitles: AxisTitles(
                                             sideTitles: SideTitles(
                                               showTitles: true,
+                                              reservedSize: 30,
+                                              interval: 1,
                                               getTitlesWidget: (value, meta) {
-                                                // Calculate the actual date for this data point
-                                                // i=0 is 6 days ago, i=6 is today
-                                                final daysAgo = 6 - value.toInt();
-                                                final targetDate = DateTime.now().subtract(Duration(days: daysAgo));
-                                                final dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                                                final dayName = dayNames[targetDate.weekday % 7]; // weekday is 1-7 (Mon-Sun), adjust for array index
-
-                                                return Padding(
-                                                  padding: const EdgeInsets.only(top: 8.0),
-                                                  child: AppText(
-                                                    dayName,
-                                                    type: AppTextType.bodySmall,
+                                                final dayIndex = value.toInt();
+                                                if (dayIndex >= 0 && dayIndex < 7) {
+                                                  final date = DateTime.now().subtract(Duration(days: 6 - dayIndex));
+                                                  final weekday = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][date.weekday - 1];
+                                                  return Padding(
+                                                    padding: const EdgeInsets.only(top: 8.0),
+                                                    child: Text(
+                                                      weekday,
+                                                      style: TextStyle(
+                                                        color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                                return const Text('');
+                                              },
+                                            ),
+                                          ),
+                                          leftTitles: AxisTitles(
+                                            sideTitles: SideTitles(
+                                              showTitles: true,
+                                              interval: 10,
+                                              reservedSize: 50,
+                                              getTitlesWidget: (value, meta) {
+                                                return Text(
+                                                  '${value.toInt()}kg',
+                                                  style: TextStyle(
                                                     color: FitLifeTheme.primaryText.withOpacity(0.6),
-                                                    useCleanStyle: true,
+                                                    fontSize: 12,
                                                   ),
                                                 );
                                               },
                                             ),
                                           ),
-                                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                                         ),
-                                        borderData: FlBorderData(show: false), // No border around chart
+                                        borderData: FlBorderData(show: false),
                                         lineBarsData: [
                                           LineChartBarData(
-                                            spots: _generateWeightChartData(weightData), // Data points sorted by date
-                                            isCurved: true, // Smooth curved line for better visual appeal
-                                            color: FitLifeTheme.accentGreen, // Line color matches theme
-                                            barWidth: 3, // Line thickness
+                                            spots: _generateWeightChartData(weightData),
+                                            isCurved: true,
+                                            color: FitLifeTheme.accentGreen,
+                                            barWidth: 3,
+                                            isStrokeCapRound: true,
                                             dotData: FlDotData(
-                                              show: true, // Show dots at each check-in point
-                                              getDotPainter: (spot, percent, barData, index) =>
-                                                  FlDotCirclePainter(
-                                                    radius: 4, // Small dot size
-                                                    color: FitLifeTheme.accentGreen, // Changed to accentGreen for consistency
-                                                    strokeWidth: 2,
-                                                    strokeColor: FitLifeTheme.surfaceColor, // Subtle border
-                                                  ),
+                                              show: true,
+                                              getDotPainter: (spot, percent, barData, index) {
+                                                return FlDotCirclePainter(
+                                                  radius: 4,
+                                                  color: FitLifeTheme.accentGreen,
+                                                  strokeWidth: 2,
+                                                  strokeColor: FitLifeTheme.background,
+                                                );
+                                              },
                                             ),
                                             belowBarData: BarAreaData(
-                                              show: true, // Enable gradient fill under the line
-                                              gradient: LinearGradient(
-                                                begin: Alignment.topCenter,
-                                                end: Alignment.bottomCenter,
-                                                colors: [
-                                                  FitLifeTheme.accentGreen.withOpacity(0.3), // Semi-transparent at top
-                                                  FitLifeTheme.accentGreen.withOpacity(0.0), // Fully transparent at bottom
-                                                ],
-                                              ),
+                                              show: true,
+                                              color: FitLifeTheme.accentGreen.withOpacity(0.1),
                                             ),
                                           ),
                                         ],
                                         lineTouchData: LineTouchData(
                                           enabled: true,
-                                          handleBuiltInTouches: false, // Disable built-in touch handling
+                                          handleBuiltInTouches: false,
                                           getTouchedSpotIndicator: (barData, spotIndexes) {
                                             return spotIndexes.map((spotIndex) {
                                               return TouchedSpotIndicatorData(
@@ -217,7 +248,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                               );
                                             }).toList();
                                           },
-                                        touchTooltipData: LineTouchTooltipData(
+                                          touchTooltipData: LineTouchTooltipData(
                                             tooltipBgColor: Colors.transparent,
                                             tooltipPadding: EdgeInsets.zero,
                                             tooltipMargin: 8,
@@ -225,9 +256,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                             getTooltipItems: (touchedSpots) {
                                               return touchedSpots.map((touchedSpot) {
                                                 final value = touchedSpot.y;
-                                                if (value == 0) return null; // Don't show zero values
+                                                if (value == 0) return null;
                                                 return LineTooltipItem(
-                                                  '${value.toStringAsFixed(1)}',
+                                                  '${value.toStringAsFixed(1)}kg',
                                                   TextStyle(
                                                     color: FitLifeTheme.textSecondary,
                                                     fontSize: 10,
@@ -263,18 +294,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
                   const SizedBox(height: FitLifeTheme.spacingXL),
 
-                  // Weekly Activity Section
+                  // Activity Charts
                   FadeInAnimation(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AppText(
-                          'Weekly Activity',
-                          type: AppTextType.headingSmall,
-                          color: FitLifeTheme.primaryText,
-                          useCleanStyle: true,
-                        ),
-                        const SizedBox(height: FitLifeTheme.spacingM),
                         _buildCaloriesChart(),
                         const SizedBox(height: FitLifeTheme.spacingL),
                         _buildWorkoutFrequencyChart(),
