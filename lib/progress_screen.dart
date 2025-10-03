@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 import 'ui/components/components.dart';
 import 'services/analytics_service.dart';
+import 'services/checkin_service.dart';
+import 'models/checkin.dart';
+import 'main_scaffold.dart';
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -12,6 +17,8 @@ class ProgressScreen extends StatefulWidget {
 
 class _ProgressScreenState extends State<ProgressScreen> {
   final AnalyticsService _analyticsService = AnalyticsService();
+  final CheckInService _checkInService = CheckInService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -74,13 +81,155 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
                   const SizedBox(height: FitLifeTheme.spacingXL),
 
-                  // Weekly Progress Section
+                  // Weight Trend Section
+                  FadeInAnimation(
+                    child: FutureBuilder<List<CheckIn>>(
+                      future: _checkInService.getRecentCheckIns(days: 7),
+                      builder: (context, weightSnapshot) {
+                        if (weightSnapshot.connectionState == ConnectionState.waiting) {
+                          return AppCard(
+                            useCleanStyle: true,
+                            child: Padding(
+                              padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AppText(
+                                    'Weight Trend',
+                                    type: AppTextType.headingSmall,
+                                    color: FitLifeTheme.primaryText,
+                                    useCleanStyle: true,
+                                  ),
+                                  const SizedBox(height: FitLifeTheme.spacingL),
+                                  const SizedBox(
+                                    height: 100,
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        color: FitLifeTheme.accentGreen,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        final weightData = weightSnapshot.data ?? [];
+                        final hasRecentCheckIns = weightData.isNotEmpty;
+
+                        return AppCard(
+                          useCleanStyle: true,
+                          child: Padding(
+                            padding: const EdgeInsets.all(FitLifeTheme.spacingS),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AppText(
+                                  'Weight Trend',
+                                  type: AppTextType.headingSmall,
+                                  color: FitLifeTheme.primaryText,
+                                  useCleanStyle: true,
+                                ),
+                                const SizedBox(height: FitLifeTheme.spacingL),
+                                if (hasRecentCheckIns) ...[
+                                  SizedBox(
+                                    height: 100,
+                                    child: LineChart(
+                                      LineChartData(
+                                        gridData: FlGridData(show: false), // Transparent background, no grid lines
+                                        titlesData: FlTitlesData(
+                                          leftTitles: AxisTitles(
+                                            sideTitles: SideTitles(showTitles: false), // Hide Y-axis labels for clean look
+                                          ),
+                                          bottomTitles: AxisTitles(
+                                            sideTitles: SideTitles(
+                                              showTitles: true,
+                                              getTitlesWidget: (value, meta) {
+                                                // Calculate the actual date for this data point
+                                                // i=0 is 6 days ago, i=6 is today
+                                                final daysAgo = 6 - value.toInt();
+                                                final targetDate = DateTime.now().subtract(Duration(days: daysAgo));
+                                                final dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                                                final dayName = dayNames[targetDate.weekday % 7]; // weekday is 1-7 (Mon-Sun), adjust for array index
+
+                                                return Padding(
+                                                  padding: const EdgeInsets.only(top: 8.0),
+                                                  child: AppText(
+                                                    dayName,
+                                                    type: AppTextType.bodySmall,
+                                                    color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                                    useCleanStyle: true,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                        ),
+                                        borderData: FlBorderData(show: false), // No border around chart
+                                        lineBarsData: [
+                                          LineChartBarData(
+                                            spots: _generateWeightChartData(weightData), // Data points sorted by date
+                                            isCurved: true, // Smooth curved line for better visual appeal
+                                            color: FitLifeTheme.accentGreen, // Line color matches theme
+                                            barWidth: 3, // Line thickness
+                                            dotData: FlDotData(
+                                              show: true, // Show dots at each check-in point
+                                              getDotPainter: (spot, percent, barData, index) =>
+                                                  FlDotCirclePainter(
+                                                    radius: 4, // Small dot size
+                                                    color: FitLifeTheme.accentBlue, // Dot color for check-in points
+                                                    strokeWidth: 2,
+                                                    strokeColor: FitLifeTheme.surfaceColor, // Subtle border
+                                                  ),
+                                            ),
+                                            belowBarData: BarAreaData(
+                                              show: true, // Enable gradient fill under the line
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                                colors: [
+                                                  FitLifeTheme.accentGreen.withOpacity(0.3), // Semi-transparent at top
+                                                  FitLifeTheme.accentGreen.withOpacity(0.0), // Fully transparent at bottom
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ] else ...[
+                                  EmptyState(
+                                    title: 'No Weight Data',
+                                    message: 'Start tracking your weight by adding check-ins.',
+                                    icon: Icons.monitor_weight,
+                                    actionButton: AnimatedButton(
+                                      text: 'Add Check-In',
+                                      icon: Icons.add,
+                                      onPressed: () => MainScaffold.navigateToTab(2), // Navigate to Check-ins tab
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: FitLifeTheme.spacingXL),
+
+                  // Weekly Activity Section
                   FadeInAnimation(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         AppText(
-                          'Weekly Progress',
+                          'Weekly Activity',
                           type: AppTextType.headingSmall,
                           color: FitLifeTheme.primaryText,
                           useCleanStyle: true,
@@ -109,6 +258,211 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         const SizedBox(height: FitLifeTheme.spacingM),
                         _buildStatsCards(stats),
                       ],
+                    ),
+                  ),
+
+                  const SizedBox(height: FitLifeTheme.spacingXL),
+
+                  // Check-in History Section
+                  FadeInAnimation(
+                    child: StreamBuilder<List<CheckIn>>(
+                      stream: _checkInService.getCheckIns(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppText(
+                                'Check-in History',
+                                type: AppTextType.headingSmall,
+                                color: FitLifeTheme.primaryText,
+                                useCleanStyle: true,
+                              ),
+                              const SizedBox(height: FitLifeTheme.spacingM),
+                              const LoadingState(message: 'Loading check-in history...'),
+                            ],
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppText(
+                                'Check-in History',
+                                type: AppTextType.headingSmall,
+                                color: FitLifeTheme.primaryText,
+                                useCleanStyle: true,
+                              ),
+                              const SizedBox(height: FitLifeTheme.spacingM),
+                              ErrorState(
+                                title: 'Failed to Load Check-Ins',
+                                message: 'Unable to load your check-in history.',
+                                onRetry: () => setState(() {}),
+                              ),
+                            ],
+                          );
+                        }
+
+                        final checkIns = snapshot.data ?? [];
+
+                        if (checkIns.isEmpty) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppText(
+                                'Check-in History',
+                                type: AppTextType.headingSmall,
+                                color: FitLifeTheme.primaryText,
+                                useCleanStyle: true,
+                              ),
+                              const SizedBox(height: FitLifeTheme.spacingM),
+                              EmptyState(
+                                title: 'No Check-Ins Yet',
+                                message: 'Start tracking your daily wellness by adding your first check-in.',
+                                icon: Icons.monitor_heart,
+                                actionButton: AnimatedButton(
+                                  text: 'Add Check-In',
+                                  icon: Icons.add,
+                                  onPressed: () => MainScaffold.navigateToTab(2), // Navigate to Check-ins tab
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AppText(
+                              'Check-in History',
+                              type: AppTextType.headingSmall,
+                              color: FitLifeTheme.primaryText,
+                              useCleanStyle: true,
+                            ),
+                            const SizedBox(height: FitLifeTheme.spacingM),
+                            // List of recent check-ins (limit to 5 most recent)
+                            ...checkIns.take(5).map((checkIn) => Padding(
+                              padding: const EdgeInsets.only(bottom: FitLifeTheme.spacingS),
+                              child: AppCard(
+                                useCleanStyle: true,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(FitLifeTheme.spacingS),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Date and weight
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          AppText(
+                                            DateFormat('MMM d, yyyy').format(checkIn.date),
+                                            type: AppTextType.bodyLarge,
+                                            color: FitLifeTheme.primaryText,
+                                            useCleanStyle: true,
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: FitLifeTheme.spacingS,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: FitLifeTheme.accentGreen.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: AppText(
+                                              '${checkIn.weight}kg',
+                                              type: AppTextType.bodyMedium,
+                                              color: FitLifeTheme.accentGreen,
+                                              useCleanStyle: true,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: FitLifeTheme.spacingS),
+
+                                      // Mood and energy
+                                      Row(
+                                        children: [
+                                          // Mood indicator
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: FitLifeTheme.spacingS,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: _getMoodColor(checkIn.mood).withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  _getMoodIcon(checkIn.mood),
+                                                  size: 14,
+                                                  color: _getMoodColor(checkIn.mood),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                AppText(
+                                                  checkIn.mood,
+                                                  type: AppTextType.bodySmall,
+                                                  color: _getMoodColor(checkIn.mood),
+                                                  useCleanStyle: true,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: FitLifeTheme.spacingM),
+
+                                          // Energy level
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.flash_on,
+                                                size: 14,
+                                                color: FitLifeTheme.accentBlue,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              AppText(
+                                                CheckIn.getEnergyLabel(checkIn.energyLevel),
+                                                type: AppTextType.bodySmall,
+                                                color: FitLifeTheme.accentBlue,
+                                                useCleanStyle: true,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+
+                                      // Notes (if present)
+                                      if (checkIn.notes != null && checkIn.notes!.isNotEmpty) ...[
+                                        const SizedBox(height: FitLifeTheme.spacingXS),
+                                        AppText(
+                                          checkIn.notes!,
+                                          type: AppTextType.bodySmall,
+                                          color: FitLifeTheme.primaryText.withOpacity(0.7),
+                                          useCleanStyle: true,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            )).toList(),
+
+                            // Show "View All" button if there are more than 5 check-ins
+                            if (checkIns.length > 5) ...[
+                              const SizedBox(height: FitLifeTheme.spacingM),
+                              Center(
+                                child: AnimatedButton(
+                                  text: 'View All Check-Ins',
+                                  icon: Icons.arrow_forward,
+                                  onPressed: () => MainScaffold.navigateToTab(2), // Navigate to Check-ins tab
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      },
                     ),
                   ),
 
@@ -556,5 +910,52 @@ class _ProgressScreenState extends State<ProgressScreen> {
         ],
       ),
     );
+  }
+
+  // Helper methods for check-in history
+  Color _getMoodColor(String mood) {
+    switch (mood) {
+      case 'Good': return FitLifeTheme.accentGreen;
+      case 'Okay': return FitLifeTheme.accentBlue;
+      case 'Bad': return FitLifeTheme.highlightPink;
+      default: return FitLifeTheme.primaryText;
+    }
+  }
+
+  IconData _getMoodIcon(String mood) {
+    switch (mood) {
+      case 'Good': return Icons.sentiment_very_satisfied;
+      case 'Okay': return Icons.sentiment_satisfied;
+      case 'Bad': return Icons.sentiment_dissatisfied;
+      default: return Icons.sentiment_neutral;
+    }
+  }
+
+  List<FlSpot> _generateWeightChartData(List<CheckIn> checkIns) {
+    List<FlSpot> spots = [];
+
+    // Create spots for each day of the last 7 days
+    // i=0 represents 6 days ago, i=6 represents today
+    for (int i = 0; i < 7; i++) {
+      final targetDate = DateTime.now().subtract(Duration(days: 6 - i));
+
+      // Find all check-ins for this specific day
+      final dayCheckIns = checkIns.where((checkIn) {
+        return checkIn.date.year == targetDate.year &&
+               checkIn.date.month == targetDate.month &&
+               checkIn.date.day == targetDate.day;
+      }).toList();
+
+      double value = 0.0;
+      if (dayCheckIns.isNotEmpty) {
+        // If multiple check-ins on same day, use the latest one (highest timestamp)
+        dayCheckIns.sort((a, b) => b.date.compareTo(a.date)); // Sort descending by time
+        value = dayCheckIns.first.weight; // Use the most recent check-in for the day
+      }
+
+      spots.add(FlSpot(i.toDouble(), value));
+    }
+
+    return spots;
   }
 }

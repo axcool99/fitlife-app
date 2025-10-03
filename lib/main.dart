@@ -8,7 +8,6 @@ import 'workout_screen.dart';
 import 'progress_screen.dart';
 import 'profile_screen.dart';
 import 'checkin_screen.dart';
-import 'checkin_history_screen.dart';
 import 'auth_wrapper.dart'; // Import the auth wrapper
 import 'ui/theme/theme.dart'; // Import our custom theme
 import 'ui/components/components.dart'; // Import components with transitions
@@ -38,7 +37,6 @@ class MyApp extends StatelessWidget {
         '/progress': (context) => const ProgressScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/checkin': (context) => const CheckInScreen(),
-        '/checkin-history': (context) => const CheckInHistoryScreen(),
       },
       onGenerateRoute: (settings) {
         // Custom transitions for different routes
@@ -54,8 +52,6 @@ class MyApp extends StatelessWidget {
             return FitLifeTransitions.slideRightToLeft(ProfileScreen());
           case '/checkin':
             return FitLifeTransitions.slideRightToLeft(CheckInScreen());
-          case '/checkin-history':
-            return FitLifeTransitions.fadeScale(CheckInHistoryScreen());
           default:
             return MaterialPageRoute(
               builder: (context) => const AuthWrapper(),

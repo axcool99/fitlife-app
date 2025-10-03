@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'ui/components/components.dart';
 import 'services/services.dart';
 import 'models/models.dart';
-import 'main_scaffold.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -131,33 +130,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                       type: AppTextType.headingSmall,
                                       color: FitLifeTheme.primaryText,
                                       useCleanStyle: true,
-                                    ),
-                                  ),
-                                  // CTA Button - Navigate to CheckInHistoryScreen
-                                  Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: FitLifeTheme.accentGreen,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: FitLifeTheme.accentGreen.withOpacity(0.5),
-                                          blurRadius: 6,
-                                          spreadRadius: 1,
-                                        ),
-                                      ],
-                                    ),
-                                    child: IconButton(
-                                      icon: Icon(
-                                        Icons.arrow_forward,
-                                        color: FitLifeTheme.background,
-                                        size: 16,
-                                      ),
-                                      onPressed: () => MainScaffold.navigateToTab(2), // Navigate to Check-ins tab
-                                      tooltip: 'View Check-In History',
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
                                     ),
                                   ),
                                 ],
@@ -311,34 +283,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                       useCleanStyle: true,
                                     ),
                                   ),
-                                  // Enhanced CTA Button - Navigate to Progress Screen
-                                  // Circular button with neon blue background for better visibility and tappability
-                                  Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: FitLifeTheme.accentBlue,
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: FitLifeTheme.accentBlue.withOpacity(0.5),
-                                          blurRadius: 6,
-                                          spreadRadius: 1,
-                                        ),
-                                      ],
-                                    ),
-                                    child: IconButton(
-                                      icon: Icon(
-                                        Icons.arrow_forward,
-                                        color: FitLifeTheme.background,
-                                        size: 16,
-                                      ),
-                                      onPressed: () => MainScaffold.navigateToTab(3), // Navigate to Progress tab
-                                      tooltip: 'View Progress',
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                    ),
-                                  ),
                                 ],
                               ),
                               const SizedBox(height: FitLifeTheme.spacingL),
@@ -452,34 +396,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                             type: AppTextType.bodySmall,
                                             color: FitLifeTheme.primaryText.withOpacity(0.8),
                                             useCleanStyle: true,
-                                          ),
-                                        ),
-                                        // Enhanced CTA Button - Navigate to Workout Screen
-                                        // Circular button with neon green background for better visibility and tappability
-                                        Container(
-                                          width: 24,
-                                          height: 24,
-                                          decoration: BoxDecoration(
-                                            color: FitLifeTheme.accentGreen,
-                                            shape: BoxShape.circle,
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: FitLifeTheme.accentGreen.withOpacity(0.5),
-                                                blurRadius: 6,
-                                                spreadRadius: 1,
-                                              ),
-                                            ],
-                                          ),
-                                          child: IconButton(
-                                            icon: Icon(
-                                              Icons.arrow_forward,
-                                              color: FitLifeTheme.background,
-                                              size: 16,
-                                            ),
-                                            onPressed: () => MainScaffold.navigateToTab(1), // Navigate to Workouts tab
-                                            tooltip: 'View Workouts',
-                                            padding: EdgeInsets.zero,
-                                            constraints: const BoxConstraints(),
                                           ),
                                         ),
                                       ],
