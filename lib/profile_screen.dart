@@ -82,24 +82,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: FitLifeAppBar(
         title: 'Profile',
         automaticallyImplyLeading: false,
-        actions: [
-          fitLifeOverflowMenu(
-            context: context,
-            onEditProfile: () {
-              // TODO: Implement edit profile functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Edit Profile - Coming Soon!')),
-              );
-            },
-            onSettings: () {
-              // TODO: Implement settings functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Settings - Coming Soon!')),
-              );
-            },
-            onLogout: _logout,
-          ),
-        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
