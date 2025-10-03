@@ -183,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             getDotPainter: (spot, percent, barData, index) =>
                                                 FlDotCirclePainter(
                                                   radius: 4, // Small dot size
-                                                  color: FitLifeTheme.accentBlue, // Dot color for check-in points
+                                                  color: FitLifeTheme.accentGreen, // Changed to accentGreen for consistency
                                                   strokeWidth: 2,
                                                   strokeColor: FitLifeTheme.surfaceColor, // Subtle border
                                                 ),
@@ -201,6 +201,50 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                         ),
                                       ],
+                                      lineTouchData: LineTouchData(
+                                        enabled: true,
+                                        touchTooltipData: LineTouchTooltipData(
+                                          tooltipBgColor: FitLifeTheme.surfaceColor.withOpacity(0.9),
+                                          tooltipBorder: BorderSide(
+                                            color: FitLifeTheme.accentGreen.withOpacity(0.3),
+                                            width: 1,
+                                          ),
+                                          tooltipPadding: const EdgeInsets.all(8),
+                                          tooltipMargin: 8,
+                                          getTooltipItems: (touchedSpots) {
+                                            return touchedSpots.map((LineBarSpot touchedSpot) {
+                                              final textStyle = TextStyle(
+                                                color: FitLifeTheme.primaryText,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                              );
+                                              return LineTooltipItem(
+                                                '${touchedSpot.y.toStringAsFixed(1)} lbs',
+                                                textStyle,
+                                              );
+                                            }).toList();
+                                          },
+                                        ),
+                                        getTouchedSpotIndicator: (barData, spotIndexes) {
+                                          return spotIndexes.map((spotIndex) {
+                                            return TouchedSpotIndicatorData(
+                                              FlLine(
+                                                color: FitLifeTheme.accentGreen.withOpacity(0.5),
+                                                strokeWidth: 2,
+                                              ),
+                                              FlDotData(
+                                                getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
+                                                  radius: 6,
+                                                  color: FitLifeTheme.accentGreen,
+                                                  strokeWidth: 2,
+                                                  strokeColor: FitLifeTheme.surfaceColor,
+                                                ),
+                                              ),
+                                            );
+                                          }).toList();
+                                        },
+                                        touchCallback: (event, response) {},
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -344,6 +388,50 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       ),
                                     ],
+                                    lineTouchData: LineTouchData(
+                                      enabled: true,
+                                      touchTooltipData: LineTouchTooltipData(
+                                        tooltipBgColor: FitLifeTheme.surfaceColor.withOpacity(0.9),
+                                        tooltipBorder: BorderSide(
+                                          color: FitLifeTheme.accentGreen.withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                        tooltipPadding: const EdgeInsets.all(8),
+                                        tooltipMargin: 8,
+                                        getTooltipItems: (touchedSpots) {
+                                          return touchedSpots.map((LineBarSpot touchedSpot) {
+                                            final textStyle = TextStyle(
+                                              color: FitLifeTheme.primaryText,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w500,
+                                            );
+                                            return LineTooltipItem(
+                                              '${touchedSpot.y.toInt()} min',
+                                              textStyle,
+                                            );
+                                          }).toList();
+                                        },
+                                      ),
+                                      getTouchedSpotIndicator: (barData, spotIndexes) {
+                                        return spotIndexes.map((spotIndex) {
+                                          return TouchedSpotIndicatorData(
+                                            FlLine(
+                                              color: FitLifeTheme.accentGreen.withOpacity(0.5),
+                                              strokeWidth: 2,
+                                            ),
+                                            FlDotData(
+                                              getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
+                                                radius: 6,
+                                                color: FitLifeTheme.accentGreen,
+                                                strokeWidth: 2,
+                                                strokeColor: FitLifeTheme.surfaceColor,
+                                              ),
+                                            ),
+                                          );
+                                        }).toList();
+                                      },
+                                      touchCallback: (event, response) {},
+                                    ),
                                   ),
                                 ),
                               ),

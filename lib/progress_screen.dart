@@ -180,7 +180,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                               getDotPainter: (spot, percent, barData, index) =>
                                                   FlDotCirclePainter(
                                                     radius: 4, // Small dot size
-                                                    color: FitLifeTheme.accentBlue, // Dot color for check-in points
+                                                    color: FitLifeTheme.accentGreen, // Changed to accentGreen for consistency
                                                     strokeWidth: 2,
                                                     strokeColor: FitLifeTheme.surfaceColor, // Subtle border
                                                   ),
@@ -198,6 +198,46 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                             ),
                                           ),
                                         ],
+                                        lineTouchData: LineTouchData(
+                                          enabled: true,
+                                          handleBuiltInTouches: false, // Disable built-in touch handling
+                                          getTouchedSpotIndicator: (barData, spotIndexes) {
+                                            return spotIndexes.map((spotIndex) {
+                                              return TouchedSpotIndicatorData(
+                                                FlLine(color: FitLifeTheme.accentGreen, strokeWidth: 2),
+                                                FlDotData(
+                                                  getDotPainter: (spot, percent, barData, index) =>
+                                                      FlDotCirclePainter(
+                                                        radius: 6,
+                                                        color: FitLifeTheme.accentGreen,
+                                                        strokeWidth: 2,
+                                                        strokeColor: FitLifeTheme.surfaceColor,
+                                                      ),
+                                                ),
+                                              );
+                                            }).toList();
+                                          },
+                                        touchTooltipData: LineTouchTooltipData(
+                                            tooltipBgColor: Colors.transparent,
+                                            tooltipPadding: EdgeInsets.zero,
+                                            tooltipMargin: 8,
+                                            tooltipRoundedRadius: 0,
+                                            getTooltipItems: (touchedSpots) {
+                                              return touchedSpots.map((touchedSpot) {
+                                                final value = touchedSpot.y;
+                                                if (value == 0) return null; // Don't show zero values
+                                                return LineTooltipItem(
+                                                  '${value.toStringAsFixed(1)}',
+                                                  TextStyle(
+                                                    color: FitLifeTheme.textSecondary,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                );
+                                              }).toList();
+                                            },
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -608,6 +648,46 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           ),
                         ),
                       ],
+                      lineTouchData: LineTouchData(
+                        enabled: true,
+                        handleBuiltInTouches: false, // Disable built-in touch handling
+                        getTouchedSpotIndicator: (barData, spotIndexes) {
+                          return spotIndexes.map((spotIndex) {
+                            return TouchedSpotIndicatorData(
+                              FlLine(color: FitLifeTheme.accentGreen, strokeWidth: 2),
+                              FlDotData(
+                                getDotPainter: (spot, percent, barData, index) =>
+                                    FlDotCirclePainter(
+                                      radius: 6,
+                                      color: FitLifeTheme.accentGreen,
+                                      strokeWidth: 2,
+                                      strokeColor: FitLifeTheme.surfaceColor,
+                                    ),
+                              ),
+                            );
+                          }).toList();
+                        },
+                        touchTooltipData: LineTouchTooltipData(
+                          tooltipBgColor: Colors.transparent,
+                          tooltipPadding: EdgeInsets.zero,
+                          tooltipMargin: 8,
+                          tooltipRoundedRadius: 0,
+                          getTooltipItems: (touchedSpots) {
+                            return touchedSpots.map((touchedSpot) {
+                              final value = touchedSpot.y;
+                              if (value == 0) return null; // Don't show zero values
+                              return LineTooltipItem(
+                                value.toStringAsFixed(0),
+                                TextStyle(
+                                  color: FitLifeTheme.textSecondary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              );
+                            }).toList();
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ),
