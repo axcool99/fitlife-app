@@ -150,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       gridData: FlGridData(
                                         show: true,
                                         drawVerticalLine: false,
-                                        horizontalInterval: 5,
+                                        horizontalInterval: 10,
                                         getDrawingHorizontalLine: (value) {
                                           return FlLine(
                                             color: FitLifeTheme.dividerColor,
@@ -191,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           sideTitles: SideTitles(
                                             showTitles: true,
                                             interval: _calculateWeightChartYAxis(weightData)['interval'],
-                                            reservedSize: 50,
+                                            reservedSize: 70,
                                             getTitlesWidget: (value, meta) {
                                               return Text(
                                                 '${value.toInt()}kg',
@@ -738,11 +738,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Calculate appropriate interval based on range
     final actualRange = maxY - minY;
-    double interval = 10.0; // Default
+    double interval = 15.0; // Default
     if (actualRange <= 50.0) {
-      interval = 5.0; // Smaller interval for tighter ranges
+      interval = 10.0; // Interval for tighter ranges
     } else if (actualRange > 100.0) {
-      interval = 20.0; // Larger interval for wider ranges
+      interval = 25.0; // Larger interval for wider ranges
     }
 
     return {'minY': minY, 'maxY': maxY, 'interval': interval};
