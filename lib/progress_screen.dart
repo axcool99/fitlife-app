@@ -190,7 +190,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                           leftTitles: AxisTitles(
                                             sideTitles: SideTitles(
                                               showTitles: true,
-                                              interval: 10,
+                                              interval: 15,
                                               reservedSize: 50,
                                               getTitlesWidget: (value, meta) {
                                                 return Text(
