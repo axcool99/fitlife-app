@@ -1051,17 +1051,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
       final dayCheckIns = checkIns.where((checkIn) {
         return checkIn.date.year == targetDate.year &&
                checkIn.date.month == targetDate.month &&
-               checkIn.date.day == targetDate.day;
+               checkIn.date.day == targetDate.day &&
+               checkIn.weight > 0; // Only include valid weights
       }).toList();
 
-      double value = 0.0;
       if (dayCheckIns.isNotEmpty) {
         // If multiple check-ins on same day, use the latest one (highest timestamp)
         dayCheckIns.sort((a, b) => b.date.compareTo(a.date)); // Sort descending by time
-        value = dayCheckIns.first.weight; // Use the most recent check-in for the day
+        final weight = dayCheckIns.first.weight; // Use the most recent valid check-in for the day
+        spots.add(FlSpot(i.toDouble(), weight));
       }
-
-      spots.add(FlSpot(i.toDouble(), value));
+      // Skip days with no valid check-ins - this creates gaps that will be connected by lines
     }
 
     return spots;
@@ -1070,14 +1070,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
   /// Calculate dynamic Y-axis range for weight chart based on user's last weight
   /// Returns minY, maxY, and interval for the chart
   Map<String, double> _calculateWeightChartYAxis(List<CheckIn> checkIns) {
-    if (checkIns.isEmpty) {
-      // Default range when no data
+    // Filter out invalid weights (<= 0)
+    final validCheckIns = checkIns.where((checkIn) => checkIn.weight > 0).toList();
+
+    if (validCheckIns.isEmpty) {
+      // Default range when no valid data
       return {'minY': 40.0, 'maxY': 100.0, 'interval': 20.0};
     }
 
-    // Get the most recent check-in weight
-    checkIns.sort((a, b) => b.date.compareTo(a.date)); // Sort by date descending
-    final lastWeight = checkIns.first.weight;
+    // Get the most recent valid check-in weight
+    validCheckIns.sort((a, b) => b.date.compareTo(a.date)); // Sort by date descending
+    final lastWeight = validCheckIns.first.weight;
 
     // Calculate initial range: lastWeight ± 20kg
     double minY = lastWeight - 20.0;
