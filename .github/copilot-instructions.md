@@ -60,6 +60,15 @@
 - **Data validation**: Implement in model constructors and service methods
 
 ### UI Development
+- **Style Guide Reference**: Always consult `/lib/theme/fitlife_style_guide.dart` before generating UI code
+- **Category Color Mapping**: All UI components must use correct category colors:
+  - Workouts = `FitLifeTheme.accentGreen`
+  - Calories = `FitLifeTheme.accentBlue`
+  - Steps = `FitLifeTheme.accentPurple`
+  - Weight Trend & Check-ins = `FitLifeTheme.accentOrange`
+  - Profile/General = `FitLifeTheme.textPrimary` / neutral grey
+- **No Hardcoded Colors**: NEVER use hardcoded colors - always use `FitLifeTheme` constants
+- **Component Consistency**: Cards, charts, and progress bars must apply category colors to headers, charts, and indicators
 - **Theme usage**: Always use `FitLifeTheme` colors and text styles
 - **Component reuse**: Check `lib/ui/components/` before creating new widgets
 - **Responsive design**: Use MediaQuery and LayoutBuilder for adaptive layouts
@@ -72,6 +81,8 @@ lib/
 ├── *_screen.dart          # Main UI screens
 ├── models/                # Data models with Firestore integration
 ├── services/              # Business logic and Firebase operations
+├── theme/                 # Design system and style guides
+│   └── fitlife_style_guide.dart  # Unified theme reference and color mapping
 └── ui/                    # Design system and reusable components
 ```</content>
 <parameter name="filePath">/Users/axcool/Desktop/ff/.github/copilot-instructions.md
