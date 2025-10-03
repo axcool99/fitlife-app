@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "730357354171",
+    "project_id": "fitness-c0836",
+    "storage_bucket": "fitness-c0836.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:730357354171:android:d36e3de57738785bd9239e",
+        "android_client_info": {
+          "package_name": "com.fitnessapp.demo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhcNx2Y2jWJCp7nx9PoXFXCefY1lnJtyE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:730357354171:android:a8a8ce90b583524cd9239e",
+        "android_client_info": {
+          "package_name": "com.jextures.fitnessApp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhcNx2Y2jWJCp7nx9PoXFXCefY1lnJtyE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

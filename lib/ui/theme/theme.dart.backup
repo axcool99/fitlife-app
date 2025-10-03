@@ -1,0 +1,251 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+/// FitLife Design System Theme - Monochromatic Minimalism
+/// Dark theme inspired by monochromatic minimalism design principles
+/// All colors use shades of gray for a cohesive, modern look
+
+class FitLifeTheme {
+  // ===== MONOCHROMATIC MINIMALISM COLORS =====
+  // Background Colors
+  static const Color backgroundColor = Color(0xFF121212); // Dark background
+  static const Color surfaceColor = Color(0xFF1E1E1E); // Dark surface for cards/inputs
+  static const Color inputFillColor = Color(0xFF1E1E1E); // Dark fill for input fields
+
+  // Text Colors
+  static const Color textPrimary = Color(0xFFE0E0E0); // Light gray for primary text
+  static const Color textSecondary = Color(0xFFB0B0B0); // Medium gray for secondary text
+
+  // UI Element Colors
+  static const Color dividerColor = Color(0xFF444444); // Medium gray for dividers
+  static const Color accentGray = Color(0xFF888888); // Accent gray for highlights
+  static const Color borderColor = Color(0xFF444444); // Border color for inputs/buttons
+  static const Color buttonBackground = Color(0xFF333333); // Dark gray for buttons
+  static const Color buttonText = Color(0xFFFFFFFF); // White text on dark buttons
+
+  // Focus/Active States
+  static const Color focusBorderColor = accentGray; // Accent gray for focused elements
+
+  // Gradients (Legacy - kept for backward compatibility)
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [Color(0xFF333333), Color(0xFF666666)], // Dark gray gradient
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient buttonPrimaryGradient = LinearGradient(
+    colors: [Color(0xFF444444), Color(0xFF666666)], // Gray gradient for buttons
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+  );
+
+  // ===== MONOCHROMATIC MINIMALISM TYPOGRAPHY =====
+  // Headings
+  static TextStyle get headingLarge => GoogleFonts.poppins(
+    fontSize: 32,
+    fontWeight: FontWeight.bold,
+    color: textPrimary, // Light gray for headings
+  );
+
+  static TextStyle get headingMedium => GoogleFonts.poppins(
+    fontSize: 24,
+    fontWeight: FontWeight.bold,
+    color: textPrimary, // Light gray for headings
+  );
+
+  static TextStyle get headingSmall => GoogleFonts.poppins(
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    color: textPrimary, // Light gray for headings
+  );
+
+  // Body Text
+  static TextStyle get bodyLarge => GoogleFonts.poppins(
+    fontSize: 16,
+    fontWeight: FontWeight.normal,
+    color: textSecondary, // Medium gray for body text
+  );
+
+  static TextStyle get bodyMedium => GoogleFonts.poppins(
+    fontSize: 14,
+    fontWeight: FontWeight.normal,
+    color: textSecondary, // Medium gray for body text
+  );
+
+  static TextStyle get bodySmall => GoogleFonts.poppins(
+    fontSize: 12,
+    fontWeight: FontWeight.normal,
+    color: textSecondary, // Medium gray for body text
+  );
+
+  // Links
+  static TextStyle get link => GoogleFonts.poppins(
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
+    color: accentGray, // Accent gray for links
+  );
+
+    // ===== LEGACY SHADOWS (Updated for dark theme) =====
+  static BoxShadow get softShadow => BoxShadow(
+    color: Colors.black.withValues(alpha: 0.3), // Darker shadow for dark theme
+    blurRadius: 8,
+    offset: const Offset(0, 4),
+  );
+
+  // ===== MONOCHROMATIC MINIMALISM SHADOWS =====
+  static BoxShadow get cardShadow => BoxShadow(
+    color: Colors.black.withValues(alpha: 0.3), // Darker shadow for dark theme
+    blurRadius: 12,
+    offset: const Offset(0, 4),
+  );
+
+  static BoxShadow get inputShadow => BoxShadow(
+    color: Colors.black.withValues(alpha: 0.2), // Subtle shadow for inputs
+    blurRadius: 6,
+    offset: const Offset(0, 2),
+  );
+
+  static BoxShadow get inputFocusShadow => BoxShadow(
+    color: accentGray.withValues(alpha: 0.3), // Accent gray glow for focus
+    blurRadius: 8,
+    offset: const Offset(0, 3),
+  );
+
+  static BoxShadow get buttonShadow => BoxShadow(
+    color: Colors.black.withValues(alpha: 0.4), // Stronger shadow for buttons
+    blurRadius: 8,
+    offset: const Offset(0, 4),
+  );
+
+  // ===== LEGACY SHADOWS (Updated for dark theme) =====
+  // softShadow is now defined above in monochromatic shadows section
+
+  // ===== CLEAN MINIMAL BORDER RADIUS =====
+  static const double cardBorderRadius = 16.0;
+  static const double inputBorderRadius = 12.0;
+  static const double buttonBorderRadius = 12.0;
+
+  // ===== LEGACY BORDER RADIUS =====
+  static const double legacyButtonBorderRadius = 25.0; // Pill shape
+
+  // ===== SPACING =====
+  static const double spacingXS = 4.0;
+  static const double spacingS = 8.0;
+  static const double spacingM = 16.0;
+  static const double spacingL = 24.0;
+  static const double spacingXL = 32.0;
+  static const double spacingXXL = 48.0;
+
+  // ===== MONOCHROMATIC MINIMALISM BUTTON STYLES =====
+  static ButtonStyle get primaryButtonStyle => ElevatedButton.styleFrom(
+    backgroundColor: buttonBackground, // Dark gray background
+    foregroundColor: buttonText, // White text
+    elevation: 0,
+    shadowColor: buttonShadow.color,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(buttonBorderRadius),
+    ),
+    padding: const EdgeInsets.symmetric(
+      horizontal: spacingL,
+      vertical: spacingM,
+    ),
+    textStyle: GoogleFonts.poppins(
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+    ),
+  );
+
+  static ButtonStyle get secondaryButtonStyle => OutlinedButton.styleFrom(
+    foregroundColor: buttonText, // White text
+    side: BorderSide(color: borderColor, width: 1.5), // Gray border
+    backgroundColor: Colors.transparent, // Transparent background
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(buttonBorderRadius),
+    ),
+    padding: const EdgeInsets.symmetric(
+      horizontal: spacingL,
+      vertical: spacingM,
+    ),
+    textStyle: GoogleFonts.poppins(
+      fontSize: 16,
+      fontWeight: FontWeight.w500,
+    ),
+  );
+
+  // ===== THEME DATA CONFIGURATION =====
+  /// Returns a ThemeData object configured for monochromatic minimalism
+  static ThemeData get themeData => ThemeData(
+    // Scaffold background color
+    scaffoldBackgroundColor: backgroundColor,
+
+    // Card theme for dark surfaces
+    cardTheme: CardThemeData(
+      color: surfaceColor,
+      elevation: 0,
+      shadowColor: cardShadow.color,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(cardBorderRadius),
+      ),
+    ),
+
+    // Icon theme for consistent icon colors
+    iconTheme: IconThemeData(
+      color: textPrimary, // Light gray for icons
+      size: 24,
+    ),
+
+    // Divider color
+    dividerColor: dividerColor,
+
+    // Text theme using our typography
+    textTheme: TextTheme(
+      displayLarge: headingLarge,
+      displayMedium: headingMedium,
+      displaySmall: headingSmall,
+      bodyLarge: bodyLarge,
+      bodyMedium: bodyMedium,
+      bodySmall: bodySmall,
+    ),
+
+    // Input decoration theme
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: inputFillColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(inputBorderRadius),
+        borderSide: BorderSide(color: borderColor, width: 1),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(inputBorderRadius),
+        borderSide: BorderSide(color: borderColor, width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(inputBorderRadius),
+        borderSide: BorderSide(color: focusBorderColor, width: 2),
+      ),
+      labelStyle: bodyMedium,
+      hintStyle: bodyMedium.copyWith(color: textSecondary.withValues(alpha: 0.6)),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: spacingM,
+        vertical: spacingM,
+      ),
+    ),
+
+    // Button themes
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: primaryButtonStyle,
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: secondaryButtonStyle,
+    ),
+
+    // App bar theme
+    appBarTheme: AppBarTheme(
+      backgroundColor: surfaceColor,
+      foregroundColor: textPrimary,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+    ),
+  );
+}

@@ -1,0 +1,47 @@
+name: fitness_app
+description: A fitness app with Firebase authentication
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^3.0.0
+  firebase_auth: ^5.0.0
+  cloud_firestore: ^5.0.0
+  google_fonts: ^6.1.0
+  fl_chart: ^0.66.1
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - FitLife Logo with Green Graph.png
+    - fitlife-logo.jpg
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "FitLife Logo with Green Graph.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "FitLife Logo with Green Graph.png"
+    background_color: "#0D0D0D"
+    theme_color: "#00FF85"
+  windows:
+    generate: true
+    image_path: "FitLife Logo with Green Graph.png"
+    icon_size: 48
+
+flutter_native_splash:
+  color: "#0D0D0D"
+  image: FitLife Logo with Green Graph.png
