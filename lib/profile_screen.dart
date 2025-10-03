@@ -81,7 +81,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: FitLifeTheme.background,
       appBar: FitLifeAppBar(
         title: 'Profile',
-        leading: fitLifeBackButton(context),
+        automaticallyImplyLeading: false,
         actions: [
           fitLifeOverflowMenu(
             context: context,

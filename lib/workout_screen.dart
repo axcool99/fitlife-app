@@ -126,7 +126,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       backgroundColor: FitLifeTheme.background,
       appBar: FitLifeAppBar(
         title: 'Your Workouts',
-        leading: fitLifeBackButton(context),
+        automaticallyImplyLeading: false,
       ),
       body: StreamBuilder<List<Workout>>(
         stream: _workoutService.getWorkouts(), // Changed from getTodaysWorkouts() to show all workouts including past ones

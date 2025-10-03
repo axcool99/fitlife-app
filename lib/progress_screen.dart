@@ -19,6 +19,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
       backgroundColor: FitLifeTheme.background,
       appBar: FitLifeAppBar(
         title: 'Progress & Analytics',
+        automaticallyImplyLeading: false,
       ),
       body: FutureBuilder<WeeklyStats>(
         future: _analyticsService.getWeeklyStats(),

@@ -79,7 +79,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
       backgroundColor: FitLifeTheme.background,
       appBar: FitLifeAppBar(
         title: 'Daily Check-In',
-        leading: fitLifeBackButton(context),
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(FitLifeTheme.spacingL),
