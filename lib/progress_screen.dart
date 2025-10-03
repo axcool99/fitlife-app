@@ -173,11 +173,11 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                                 final dayIndex = value.toInt();
                                                 if (dayIndex >= 0 && dayIndex < 7) {
                                                   final date = DateTime.now().subtract(Duration(days: 6 - dayIndex));
-                                                  final weekday = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][date.weekday - 1];
+                                                  final dateLabel = '${date.day}/${date.month}';
                                                   return Padding(
                                                     padding: const EdgeInsets.only(top: 8.0),
                                                     child: Text(
-                                                      weekday,
+                                                      dateLabel,
                                                       style: TextStyle(
                                                         color: FitLifeTheme.primaryText.withOpacity(0.6),
                                                         fontSize: 12,
