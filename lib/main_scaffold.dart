@@ -48,17 +48,17 @@ class _MainScaffoldState extends State<MainScaffold> {
       label: 'Workouts',
     ),
     const BottomNavigationBarItem(
-      icon: Icon(Icons.assignment_outlined),
-      activeIcon: Icon(Icons.assignment),
+      icon: Icon(Icons.assignment_turned_in_outlined),
+      activeIcon: Icon(Icons.assignment_turned_in),
       label: 'Check-ins',
     ),
     const BottomNavigationBarItem(
-      icon: Icon(Icons.bar_chart_outlined),
-      activeIcon: Icon(Icons.bar_chart),
+      icon: Icon(Icons.show_chart_outlined),
+      activeIcon: Icon(Icons.show_chart),
       label: 'Progress',
     ),
     const BottomNavigationBarItem(
-      icon: Icon(Icons.person_outlined),
+      icon: Icon(Icons.person_outline),
       activeIcon: Icon(Icons.person),
       label: 'Profile',
     ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'login_screen.dart';
-import 'home_screen.dart';
+import 'main_scaffold.dart';
 
 /// AuthWrapper - Handles authentication-aware navigation
 /// Listens to Firebase Auth state changes and shows appropriate screen
@@ -22,9 +22,9 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        // If user is authenticated, show HomeScreen
+        // If user is authenticated, show MainScaffold
         if (snapshot.hasData && snapshot.data != null) {
-          return const HomeScreen();
+          return MainScaffold(key: MainScaffold.scaffoldKey);
         }
 
         // If user is not authenticated, show LoginScreen

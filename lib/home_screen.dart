@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'ui/components/components.dart';
 import 'services/services.dart';
 import 'models/models.dart';
+import 'main_scaffold.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Icons.person,
               color: FitLifeTheme.primaryText,
             ),
-            onPressed: () => Navigator.of(context).pushNamed('/profile'),
+            onPressed: () => MainScaffold.navigateToTab(4), // Navigate to Profile tab
             tooltip: 'Profile',
           ),
         ],
@@ -169,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         color: FitLifeTheme.background,
                                         size: 16,
                                       ),
-                                      onPressed: () => Navigator.pushNamed(context, '/checkin-history'),
+                                      onPressed: () => MainScaffold.navigateToTab(2), // Navigate to Check-ins tab
                                       tooltip: 'View Check-In History',
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
@@ -348,7 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         color: FitLifeTheme.background,
                                         size: 16,
                                       ),
-                                      onPressed: () => Navigator.pushNamed(context, '/progress'),
+                                      onPressed: () => MainScaffold.navigateToTab(3), // Navigate to Progress tab
                                       tooltip: 'View Progress',
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
@@ -491,7 +492,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               color: FitLifeTheme.background,
                                               size: 16,
                                             ),
-                                            onPressed: () => Navigator.pushNamed(context, '/workout'),
+                                            onPressed: () => MainScaffold.navigateToTab(1), // Navigate to Workouts tab
                                             tooltip: 'View Workouts',
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(),

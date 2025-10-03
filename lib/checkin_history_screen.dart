@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'ui/components/components.dart';
 import 'services/checkin_service.dart';
 import 'models/checkin.dart';
+import 'main_scaffold.dart';
 
 class CheckInHistoryScreen extends StatefulWidget {
   const CheckInHistoryScreen({super.key});
@@ -68,7 +69,7 @@ class _CheckInHistoryScreenState extends State<CheckInHistoryScreen> {
               actionButton: AnimatedButton(
                 text: 'Add First Check-In',
                 icon: Icons.add,
-                onPressed: () => Navigator.pushNamed(context, '/checkin'),
+                onPressed: () => MainScaffold.navigateToTab(2), // Navigate to Check-ins tab
               ),
             );
           }
@@ -204,7 +205,7 @@ class _CheckInHistoryScreenState extends State<CheckInHistoryScreen> {
         },
       ),
       floatingActionButton: AnimatedFAB(
-        onPressed: () => Navigator.pushNamed(context, '/checkin'),
+        onPressed: () => MainScaffold.navigateToTab(2), // Navigate to Check-ins tab
         icon: Icons.add,
         tooltip: 'Add Check-In',
       ),
