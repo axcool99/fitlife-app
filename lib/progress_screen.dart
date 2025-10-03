@@ -17,16 +17,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FitLifeTheme.background,
-      appBar: AppBar(
-        title: AppText(
-          'Progress & Analytics',
-          type: AppTextType.headingSmall,
-          color: FitLifeTheme.primaryText,
-          useCleanStyle: true,
-        ),
-        backgroundColor: FitLifeTheme.surfaceColor,
-        elevation: 0,
-        actions: [],
+      appBar: FitLifeAppBar(
+        title: 'Progress & Analytics',
       ),
       body: FutureBuilder<WeeklyStats>(
         future: _analyticsService.getWeeklyStats(),

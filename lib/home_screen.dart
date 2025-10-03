@@ -29,27 +29,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FitLifeTheme.background,
-      appBar: AppBar(
-        title: AppText(
-          'Welcome, $userName',
-          type: AppTextType.headingSmall,
-          color: FitLifeTheme.primaryText,
-          useCleanStyle: true,
-          overflow: TextOverflow.ellipsis,
-        ),
-        backgroundColor: FitLifeTheme.surfaceColor,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.person,
-              color: FitLifeTheme.primaryText,
-            ),
-            onPressed: () => MainScaffold.navigateToTab(4), // Navigate to Profile tab
-            tooltip: 'Profile',
-          ),
-        ],
-      ),
       body: StreamBuilder<FitnessData?>(
         stream: _fitnessDataService.getTodayFitnessData(),
         builder: (context, snapshot) {

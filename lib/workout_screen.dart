@@ -124,23 +124,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FitLifeTheme.background,
-      appBar: AppBar(
-        title: AppText(
-          'Your Workouts',
-          type: AppTextType.headingSmall,
-          color: FitLifeTheme.primaryText,
-          useCleanStyle: true,
-        ),
-        backgroundColor: FitLifeTheme.surfaceColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: FitLifeTheme.primaryText,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [],
+      appBar: FitLifeAppBar(
+        title: 'Your Workouts',
+        leading: fitLifeBackButton(context),
       ),
       body: StreamBuilder<List<Workout>>(
         stream: _workoutService.getWorkouts(), // Changed from getTodaysWorkouts() to show all workouts including past ones

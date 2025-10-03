@@ -79,20 +79,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FitLifeTheme.background,
-      appBar: AppBar(
-        title: const AppText(
-          'Profile',
-          type: AppTextType.headingSmall,
-        ),
-        backgroundColor: FitLifeTheme.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: FitLifeTheme.textPrimary,
+      appBar: FitLifeAppBar(
+        title: 'Profile',
+        leading: fitLifeBackButton(context),
+        actions: [
+          fitLifeOverflowMenu(
+            context: context,
+            onEditProfile: () {
+              // TODO: Implement edit profile functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Edit Profile - Coming Soon!')),
+              );
+            },
+            onSettings: () {
+              // TODO: Implement settings functionality
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Settings - Coming Soon!')),
+              );
+            },
+            onLogout: _logout,
           ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

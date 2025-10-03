@@ -21,22 +21,9 @@ class _CheckInHistoryScreenState extends State<CheckInHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FitLifeTheme.background,
-      appBar: AppBar(
-        title: AppText(
-          'Check-In History',
-          type: AppTextType.headingSmall,
-          color: FitLifeTheme.primaryText,
-          useCleanStyle: true,
-        ),
-        backgroundColor: FitLifeTheme.surfaceColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back,
-            color: FitLifeTheme.primaryText,
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+      appBar: FitLifeAppBar(
+        title: 'Check-In History',
+        leading: fitLifeBackButton(context),
       ),
       body: StreamBuilder<List<CheckIn>>(
         stream: _checkInService.getCheckIns(),

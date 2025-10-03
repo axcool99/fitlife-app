@@ -17,3 +17,4 @@ export 'shimmer_loading.dart';
 export 'micro_interactions.dart';
 export 'empty_states.dart';
 export 'editable_text_field.dart';
+export 'fitlife_appbar.dart';
