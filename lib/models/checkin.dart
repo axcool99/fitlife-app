@@ -41,7 +41,11 @@ class CheckIn {
     return CheckIn(
       id: doc.id,
       userId: data['userId'] ?? '',
-      date: (data['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      // Use 'timestamp' field if available, otherwise fall back to 'date'
+      // This provides migration support for existing data without 'timestamp'
+      date: (data['timestamp'] as Timestamp?)?.toDate() ??
+            (data['date'] as Timestamp?)?.toDate() ??
+            DateTime.now(),
       weight: (data['weight'] as num?)?.toDouble() ?? 0.0,
       mood: data['mood'] ?? 'Okay',
       energyLevel: data['energyLevel'] ?? 3,
@@ -53,6 +57,8 @@ class CheckIn {
   Map<String, dynamic> toFirestore() {
     return {
       'userId': userId,
+      // Store both 'timestamp' (new) and 'date' (legacy) for backward compatibility
+      'timestamp': Timestamp.fromDate(date),
       'date': Timestamp.fromDate(date),
       'weight': weight,
       'mood': mood,

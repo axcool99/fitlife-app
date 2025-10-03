@@ -422,7 +422,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           AppText(
-                                            DateFormat('MMM d, yyyy').format(checkIn.date),
+                                            DateFormat('MMM dd, yyyy • HH:mm').format(checkIn.date.toLocal()),
                                             type: AppTextType.bodyLarge,
                                             color: FitLifeTheme.primaryText,
                                             useCleanStyle: true,

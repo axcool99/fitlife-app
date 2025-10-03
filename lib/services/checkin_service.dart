@@ -19,12 +19,12 @@ class CheckInService {
     return _firestore.collection('users').doc(currentUserId).collection('checkins');
   }
 
-  /// Get all check-ins for current user, ordered by date (oldest first for chart trends)
+  /// Get all check-ins for current user, ordered by timestamp descending (newest first)
   Stream<List<CheckIn>> getCheckIns() {
     if (currentUserId == null) return Stream.value([]);
 
     return _checkInsCollection
-        .orderBy('date', descending: false)
+        .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => CheckIn.fromFirestore(doc)).toList());
@@ -35,7 +35,7 @@ class CheckInService {
     if (currentUserId == null) return null;
 
     final snapshot = await _checkInsCollection
-        .orderBy('date', descending: true)
+        .orderBy('timestamp', descending: true)
         .limit(1)
         .get();
 
@@ -44,14 +44,14 @@ class CheckInService {
   }
 
   /// Stream the most recent check-in for current user (real-time updates)
-  /// Firestore query: users/{userId}/checkins.orderBy("date", descending: true).limit(1)
-  /// This ensures we get the most recent check-in by date in descending order (newest first)
+  /// Firestore query: users/{userId}/checkins.orderBy("timestamp", descending: true).limit(1)
+  /// This ensures we get the most recent check-in by timestamp in descending order (newest first)
   /// and limit to just 1 document for performance
   Stream<CheckIn?> getLastCheckInStream() {
     if (currentUserId == null) return Stream.value(null);
 
     return _checkInsCollection
-        .orderBy('date', descending: true) // Most recent first (descending order)
+        .orderBy('timestamp', descending: true) // Most recent first (descending order)
         .limit(1) // Only get the most recent check-in
         .snapshots()
         .map((snapshot) {
@@ -61,17 +61,15 @@ class CheckInService {
           debugPrint('HomeScreen: Retrieved last check-in - Weight: ${checkIn.weight}kg, Mood: ${checkIn.mood}, Date: ${checkIn.date.toLocal()}');
           return checkIn;
         });
-  }
-
-  /// Get check-ins for the last N days for trend analysis
+  }  /// Get check-ins for the last N days for trend analysis
   Future<List<CheckIn>> getRecentCheckIns({int days = 30}) async {
     if (currentUserId == null) return [];
 
     final cutoffDate = DateTime.now().subtract(Duration(days: days));
 
     final snapshot = await _checkInsCollection
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(cutoffDate))
-        .orderBy('date', descending: false) // Oldest first for trend charts
+        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(cutoffDate))
+        .orderBy('timestamp', descending: false) // Oldest first for trend charts
         .get();
 
     return snapshot.docs.map((doc) => CheckIn.fromFirestore(doc)).toList();
