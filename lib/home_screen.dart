@@ -127,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   Icon(
                                     Icons.monitor_weight,
-                                    color: FitLifeTheme.accentBlue,
+                                    color: FitLifeTheme.accentOrange,
                                     size: 24,
                                   ),
                                   const SizedBox(width: FitLifeTheme.spacingS),
@@ -207,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         LineChartBarData(
                                           spots: _generateWeightChartData(weightData),
                                           isCurved: true,
-                                          color: FitLifeTheme.accentBlue,
+                                          color: FitLifeTheme.accentOrange,
                                           barWidth: 3,
                                           isStrokeCapRound: true,
                                           dotData: FlDotData(
@@ -215,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             getDotPainter: (spot, percent, barData, index) {
                                               return FlDotCirclePainter(
                                                 radius: 4,
-                                                color: FitLifeTheme.accentBlue,
+                                                color: FitLifeTheme.accentOrange,
                                                 strokeWidth: 2,
                                                 strokeColor: FitLifeTheme.background,
                                               );
@@ -223,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                           belowBarData: BarAreaData(
                                             show: true,
-                                            color: FitLifeTheme.accentBlue.withOpacity(0.1),
+                                            color: FitLifeTheme.accentOrange.withOpacity(0.1),
                                           ),
                                         ),
                                       ],
@@ -233,12 +233,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                         getTouchedSpotIndicator: (barData, spotIndexes) {
                                           return spotIndexes.map((spotIndex) {
                                             return TouchedSpotIndicatorData(
-                                              FlLine(color: FitLifeTheme.accentBlue, strokeWidth: 2),
+                                              FlLine(color: FitLifeTheme.accentOrange, strokeWidth: 2),
                                               FlDotData(
                                                 getDotPainter: (spot, percent, barData, index) =>
                                                     FlDotCirclePainter(
                                                       radius: 6,
-                                                      color: FitLifeTheme.accentBlue,
+                                                      color: FitLifeTheme.accentOrange,
                                                       strokeWidth: 2,
                                                       strokeColor: FitLifeTheme.surfaceColor,
                                                     ),
@@ -329,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 children: [
                                   Icon(
                                     Icons.local_fire_department,
-                                    color: FitLifeTheme.accentGreen,
+                                    color: FitLifeTheme.accentBlue,
                                     size: 24,
                                   ),
                                   const SizedBox(width: FitLifeTheme.spacingS),
@@ -408,7 +408,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       LineChartBarData(
                                         spots: spots,
                                         isCurved: true,
-                                        color: FitLifeTheme.accentGreen,
+                                        color: FitLifeTheme.accentBlue,
                                         barWidth: 3,
                                         isStrokeCapRound: true,
                                         dotData: FlDotData(
@@ -416,7 +416,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           getDotPainter: (spot, percent, barData, index) {
                                             return FlDotCirclePainter(
                                               radius: 4,
-                                              color: FitLifeTheme.accentGreen,
+                                              color: FitLifeTheme.accentBlue,
                                               strokeWidth: 2,
                                               strokeColor: FitLifeTheme.background,
                                             );
@@ -424,7 +424,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                         belowBarData: BarAreaData(
                                           show: true,
-                                          color: FitLifeTheme.accentGreen.withOpacity(0.1),
+                                          color: FitLifeTheme.accentBlue.withOpacity(0.1),
                                         ),
                                       ),
                                     ],
@@ -434,12 +434,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       getTouchedSpotIndicator: (barData, spotIndexes) {
                                         return spotIndexes.map((spotIndex) {
                                           return TouchedSpotIndicatorData(
-                                            FlLine(color: FitLifeTheme.accentGreen, strokeWidth: 2),
+                                            FlLine(color: FitLifeTheme.accentBlue, strokeWidth: 2),
                                             FlDotData(
                                               getDotPainter: (spot, percent, barData, index) =>
                                                   FlDotCirclePainter(
                                                     radius: 6,
-                                                    color: FitLifeTheme.accentGreen,
+                                                    color: FitLifeTheme.accentBlue,
                                                     strokeWidth: 2,
                                                     strokeColor: FitLifeTheme.surfaceColor,
                                                   ),
@@ -596,7 +596,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           : 0.0, // Show empty progress when no goal is set
                                       backgroundColor: FitLifeTheme.dividerColor,
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                        FitLifeTheme.accentGreen, // Consistent green progress fill across all cards
+                                        FitLifeTheme.accentBlue, // Consistent blue progress fill for calories
                                       ),
                                     ),
                                   ],
@@ -625,7 +625,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     children: [
                                       Icon(
                                         Icons.directions_walk,
-                                        color: FitLifeTheme.highlightPink,
+                                        color: FitLifeTheme.accentPurple,
                                         size: 20,
                                       ),
                                       const SizedBox(width: FitLifeTheme.spacingXS),
@@ -649,7 +649,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         : 0.0, // Show empty progress when no goal is set
                                     backgroundColor: FitLifeTheme.dividerColor, // Consistent grey track color
                                     valueColor: AlwaysStoppedAnimation<Color>(
-                                      FitLifeTheme.highlightPink,
+                                      FitLifeTheme.accentPurple,
                                     ),
                                   ),
                                 ],

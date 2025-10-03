@@ -129,7 +129,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                 children: [
                                   Icon(
                                     Icons.monitor_weight,
-                                    color: FitLifeTheme.accentBlue,
+                                    color: FitLifeTheme.accentOrange,
                                     size: 24,
                                   ),
                                   const SizedBox(width: FitLifeTheme.spacingS),
@@ -209,7 +209,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                           LineChartBarData(
                                             spots: _generateWeightChartData(weightData),
                                             isCurved: true,
-                                            color: FitLifeTheme.accentBlue,
+                                            color: FitLifeTheme.accentOrange,
                                             barWidth: 3,
                                             isStrokeCapRound: true,
                                             dotData: FlDotData(
@@ -217,7 +217,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                               getDotPainter: (spot, percent, barData, index) {
                                                 return FlDotCirclePainter(
                                                   radius: 4,
-                                                  color: FitLifeTheme.accentBlue,
+                                                  color: FitLifeTheme.accentOrange,
                                                   strokeWidth: 2,
                                                   strokeColor: FitLifeTheme.background,
                                                 );
@@ -225,7 +225,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                             ),
                                             belowBarData: BarAreaData(
                                               show: true,
-                                              color: FitLifeTheme.accentBlue.withOpacity(0.1),
+                                              color: FitLifeTheme.accentOrange.withOpacity(0.1),
                                             ),
                                           ),
                                         ],
@@ -235,12 +235,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                           getTouchedSpotIndicator: (barData, spotIndexes) {
                                             return spotIndexes.map((spotIndex) {
                                               return TouchedSpotIndicatorData(
-                                                FlLine(color: FitLifeTheme.accentBlue, strokeWidth: 2),
+                                                FlLine(color: FitLifeTheme.accentOrange, strokeWidth: 2),
                                                 FlDotData(
                                                   getDotPainter: (spot, percent, barData, index) =>
                                                       FlDotCirclePainter(
                                                         radius: 6,
-                                                        color: FitLifeTheme.accentBlue,
+                                                        color: FitLifeTheme.accentOrange,
                                                         strokeWidth: 2,
                                                         strokeColor: FitLifeTheme.surfaceColor,
                                                       ),
@@ -431,13 +431,13 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                               vertical: 2,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: FitLifeTheme.accentGreen.withOpacity(0.1),
+                                              color: FitLifeTheme.accentOrange.withOpacity(0.1),
                                               borderRadius: BorderRadius.circular(12),
                                             ),
                                             child: AppText(
                                               '${checkIn.weight}kg',
                                               type: AppTextType.bodyMedium,
-                                              color: FitLifeTheme.accentGreen,
+                                              color: FitLifeTheme.accentOrange,
                                               useCleanStyle: true,
                                             ),
                                           ),
@@ -573,7 +573,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   children: [
                     Icon(
                       Icons.local_fire_department,
-                      color: FitLifeTheme.accentGreen,
+                      color: FitLifeTheme.accentBlue,
                       size: 24,
                     ),
                     const SizedBox(width: FitLifeTheme.spacingS),
@@ -652,7 +652,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         LineChartBarData(
                           spots: spots,
                           isCurved: true,
-                          color: FitLifeTheme.accentGreen,
+                          color: FitLifeTheme.accentBlue,
                           barWidth: 3,
                           isStrokeCapRound: true,
                           dotData: FlDotData(
@@ -660,7 +660,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                             getDotPainter: (spot, percent, barData, index) {
                               return FlDotCirclePainter(
                                 radius: 4,
-                                color: FitLifeTheme.accentGreen,
+                                color: FitLifeTheme.accentBlue,
                                 strokeWidth: 2,
                                 strokeColor: FitLifeTheme.background,
                               );
@@ -668,7 +668,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           ),
                           belowBarData: BarAreaData(
                             show: true,
-                            color: FitLifeTheme.accentGreen.withOpacity(0.1),
+                            color: FitLifeTheme.accentBlue.withOpacity(0.1),
                           ),
                         ),
                       ],
@@ -678,12 +678,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         getTouchedSpotIndicator: (barData, spotIndexes) {
                           return spotIndexes.map((spotIndex) {
                             return TouchedSpotIndicatorData(
-                              FlLine(color: FitLifeTheme.accentGreen, strokeWidth: 2),
+                              FlLine(color: FitLifeTheme.accentBlue, strokeWidth: 2),
                               FlDotData(
                                 getDotPainter: (spot, percent, barData, index) =>
                                     FlDotCirclePainter(
                                       radius: 6,
-                                      color: FitLifeTheme.accentGreen,
+                                      color: FitLifeTheme.accentBlue,
                                       strokeWidth: 2,
                                       strokeColor: FitLifeTheme.surfaceColor,
                                     ),
@@ -937,7 +937,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   'Day(s) Streak',
                   '${stats.streak}',
                   Icons.calendar_today,
-                  FitLifeTheme.highlightPink,
+                  FitLifeTheme.accentPurple,
                 ),
               ],
             ),

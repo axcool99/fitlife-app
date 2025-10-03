@@ -10,6 +10,8 @@ class FitLifeTheme {
   static const Color primaryText = Color(0xFFFFFFFF);
   static const Color accentGreen = Color(0xFF00FF85);
   static const Color accentBlue = Color(0xFF1E90FF);
+  static const Color accentOrange = Color(0xFFFFA500);
+  static const Color accentPurple = Color(0xFF9B59B6);
   static const Color highlightPink = Color(0xFFFF0099);
 
   // ===== BACKWARD COMPATIBILITY COLORS =====
