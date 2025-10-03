@@ -723,6 +723,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
+  /// Builds the Workout Frequency chart using accentGreen per style guide.
+  /// See /lib/theme/fitlife_style_guide.dart for color mapping guidelines.
   Widget _buildWorkoutFrequencyChart() {
     return FutureBuilder<Map<DateTime, int>>(
       future: _analyticsService.getDailyWorkoutFrequency(),
@@ -743,7 +745,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             barRods: [
               BarChartRodData(
                 toY: entry.value.toDouble(),
-                color: FitLifeTheme.accentBlue,
+                color: FitLifeTheme.accentGreen,
                 width: 16,
                 borderRadius: BorderRadius.circular(4),
               ),
@@ -766,7 +768,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   children: [
                     Icon(
                       Icons.fitness_center,
-                      color: FitLifeTheme.accentBlue,
+                      color: FitLifeTheme.accentGreen,
                       size: 24,
                     ),
                     const SizedBox(width: FitLifeTheme.spacingS),

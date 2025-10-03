@@ -94,5 +94,4 @@
 /// ## Version History
 /// - v1.0: Initial unified color mapping (Workouts=Green, Calories=Blue, Steps=Purple, Weight=Orange)
 ///   - Added accentOrange and accentPurple to FitLifeTheme
-///   - Refactored all screens to use category-based colors</content>
-<parameter name="filePath">/Users/axcool/Desktop/ff/lib/theme/fitlife_style_guide.dart
+///   - Refactored all screens to use category-based colors
