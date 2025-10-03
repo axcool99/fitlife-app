@@ -191,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           sideTitles: SideTitles(
                                             showTitles: true,
                                             interval: _calculateWeightChartYAxis(weightData)['interval'],
-                                            reservedSize: 70,
+                                            reservedSize: 50,
                                             getTitlesWidget: (value, meta) {
                                               return Text(
                                                 '${value.toInt()}kg',

@@ -193,7 +193,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                             sideTitles: SideTitles(
                                               showTitles: true,
                                               interval: _calculateWeightChartYAxis(weightData)['interval'],
-                                              reservedSize: 70,
+                                              reservedSize: 50,
                                               getTitlesWidget: (value, meta) {
                                                 return Text(
                                                   '${value.toInt()}kg',
