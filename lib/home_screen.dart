@@ -81,8 +81,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Monthly Weight Trend Chart
                 FadeInAnimation(
-                  child: FutureBuilder<List<CheckIn>>(
-                    future: _checkInService.getRecentCheckIns(days: 7),
+                  child: StreamBuilder<List<CheckIn>>(
+                    stream: _checkInService.getCheckIns(),
                     builder: (context, weightSnapshot) {
                       if (weightSnapshot.connectionState == ConnectionState.waiting) {
                         return AppCard(

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'ui/components/components.dart';
 import 'services/checkin_service.dart';
 import 'models/checkin.dart';
+import 'main_scaffold.dart';
 
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
@@ -51,11 +52,12 @@ class _CheckInScreenState extends State<CheckInScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Check-in saved successfully!'),
+            content: Text('Check-in saved!'),
             backgroundColor: FitLifeTheme.accentGreen,
           ),
         );
-        Navigator.of(context).pop(); // Navigate back to HomeScreen
+        // Navigate to HomeScreen (tab index 0)
+        MainScaffold.navigateToTab(0);
       }
     } catch (e) {
       if (mounted) {
