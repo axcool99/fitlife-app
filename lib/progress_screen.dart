@@ -83,8 +83,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
                   // Weight Trend Section
                   FadeInAnimation(
-                    child: FutureBuilder<List<CheckIn>>(
-                      future: _checkInService.getRecentCheckIns(days: 7),
+                    child: StreamBuilder<List<CheckIn>>(
+                      stream: _checkInService.getCheckIns(),
                       builder: (context, weightSnapshot) {
                         if (weightSnapshot.connectionState == ConnectionState.waiting) {
                           return AppCard(
@@ -147,6 +147,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                     height: 200,
                                     child: LineChart(
                                       LineChartData(
+                                        minY: _calculateWeightChartYAxis(weightData)['minY'],
+                                        maxY: _calculateWeightChartYAxis(weightData)['maxY'],
                                         gridData: FlGridData(
                                           show: true,
                                           drawVerticalLine: false,
@@ -190,7 +192,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                                           leftTitles: AxisTitles(
                                             sideTitles: SideTitles(
                                               showTitles: true,
-                                              interval: 20,
+                                              interval: _calculateWeightChartYAxis(weightData)['interval'],
                                               reservedSize: 50,
                                               getTitlesWidget: (value, meta) {
                                                 return Text(
@@ -1063,5 +1065,45 @@ class _ProgressScreenState extends State<ProgressScreen> {
     }
 
     return spots;
+  }
+
+  /// Calculate dynamic Y-axis range for weight chart based on user's last weight
+  /// Returns minY, maxY, and interval for the chart
+  Map<String, double> _calculateWeightChartYAxis(List<CheckIn> checkIns) {
+    if (checkIns.isEmpty) {
+      // Default range when no data
+      return {'minY': 40.0, 'maxY': 100.0, 'interval': 20.0};
+    }
+
+    // Get the most recent check-in weight
+    checkIns.sort((a, b) => b.date.compareTo(a.date)); // Sort by date descending
+    final lastWeight = checkIns.first.weight;
+
+    // Calculate initial range: lastWeight ± 20kg
+    double minY = lastWeight - 20.0;
+    double maxY = lastWeight + 20.0;
+
+    // Ensure minimum range of 40kg
+    final range = maxY - minY;
+    if (range < 40.0) {
+      final center = (minY + maxY) / 2.0;
+      minY = center - 20.0;
+      maxY = center + 20.0;
+    }
+
+    // Round to nearest 5kg
+    minY = (minY / 5.0).round() * 5.0;
+    maxY = (maxY / 5.0).round() * 5.0;
+
+    // Calculate appropriate interval based on range
+    final actualRange = maxY - minY;
+    double interval = 10.0; // Default
+    if (actualRange <= 50.0) {
+      interval = 5.0; // Smaller interval for tighter ranges
+    } else if (actualRange > 100.0) {
+      interval = 20.0; // Larger interval for wider ranges
+    }
+
+    return {'minY': minY, 'maxY': maxY, 'interval': interval};
   }
 }
