@@ -13,6 +13,7 @@ import 'auth_wrapper.dart'; // Import the auth wrapper
 import 'ui/theme/theme.dart'; // Import our custom theme
 import 'ui/components/components.dart'; // Import components with transitions
 import 'services/cache_service.dart'; // Import cache service
+import 'services/network_service.dart'; // Import network service
 import 'services/sync_service.dart'; // Import sync service
 import 'services/workout_service.dart'; // Import workout service
 import 'services/checkin_service.dart'; // Import checkin service

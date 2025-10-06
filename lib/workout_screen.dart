@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'ui/components/components.dart';
 import 'services/workout_service.dart';
 import 'services/ai_service.dart';
 import 'services/cache_service.dart';
 import 'services/sync_service.dart';
+import 'services/network_service.dart';
 import 'models/workout.dart';
 import 'main.dart'; // Import for getIt
 
@@ -77,19 +79,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       final hasPending = await _syncService.hasPendingSync();
       if (hasPending) {
         await _syncService.syncAllData();
-        // Refresh the UI after sync
-        setState(() {});
-      }
-    } catch (e) {
-      print('Error syncing cached data: $e');
-    }
-  }
-
-  Future<void> _syncCachedData() async {
-    try {
-      final hasPending = await getIt<SyncService>().hasPendingSync();
-      if (hasPending) {
-        await getIt<SyncService>().syncAllData();
         // Refresh the UI after sync
         setState(() {});
       }
