@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'ui/components/components.dart';
 import 'services/workout_service.dart';
 import 'models/workout.dart';
+import 'main.dart'; // Import for ServiceLocator
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
@@ -14,6 +15,51 @@ class WorkoutScreen extends StatefulWidget {
 class _WorkoutScreenState extends State<WorkoutScreen> {
   final WorkoutService _workoutService = WorkoutService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  bool _isOnline = true; // Track online status
+
+  @override
+  void initState() {
+    super.initState();
+    _checkConnectivity();
+  }
+
+  Future<void> _checkConnectivity() async {
+    try {
+      final wasOnline = _isOnline;
+      final isOnline = await ServiceLocator.cacheService.isOnline();
+
+      if (mounted) {
+        setState(() {
+          _isOnline = isOnline;
+        });
+
+        // If we just came back online, sync cached data
+        if (!wasOnline && isOnline) {
+          _syncCachedData();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isOnline = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _syncCachedData() async {
+    try {
+      final hasPending = await ServiceLocator.syncService.hasPendingSync();
+      if (hasPending) {
+        await ServiceLocator.syncService.syncAllData();
+        // Refresh the UI after sync
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error syncing cached data: $e');
+    }
+  }
 
   void _addExercise() {
     showDialog(
@@ -176,6 +222,42 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                         ),
                       ),
                       const SizedBox(height: FitLifeTheme.spacingL),
+
+                      // Offline indicator
+                      if (!_isOnline) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: FitLifeTheme.spacingM,
+                            vertical: FitLifeTheme.spacingS,
+                          ),
+                          margin: const EdgeInsets.only(bottom: FitLifeTheme.spacingM),
+                          decoration: BoxDecoration(
+                            color: FitLifeTheme.accentOrange.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(FitLifeTheme.cardBorderRadius),
+                            border: Border.all(
+                              color: FitLifeTheme.accentOrange.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.wifi_off,
+                                color: FitLifeTheme.accentOrange,
+                                size: 16,
+                              ),
+                              const SizedBox(width: FitLifeTheme.spacingS),
+                              AppText(
+                                'Offline Mode - Showing cached data',
+                                type: AppTextType.bodySmall,
+                                color: FitLifeTheme.accentOrange,
+                                useCleanStyle: true,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
 
                       // Display grouped workouts by date
                       if (workouts.isEmpty) ...[

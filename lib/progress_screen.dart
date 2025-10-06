@@ -7,6 +7,7 @@ import 'services/analytics_service.dart';
 import 'services/checkin_service.dart';
 import 'models/checkin.dart';
 import 'main_scaffold.dart';
+import 'main.dart'; // Import for ServiceLocator
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -19,6 +20,51 @@ class _ProgressScreenState extends State<ProgressScreen> {
   final AnalyticsService _analyticsService = AnalyticsService();
   final CheckInService _checkInService = CheckInService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  bool _isOnline = true; // Track online status
+
+  @override
+  void initState() {
+    super.initState();
+    _checkConnectivity();
+  }
+
+  Future<void> _checkConnectivity() async {
+    try {
+      final wasOnline = _isOnline;
+      final isOnline = await ServiceLocator.cacheService.isOnline();
+
+      if (mounted) {
+        setState(() {
+          _isOnline = isOnline;
+        });
+
+        // If we just came back online, sync cached data
+        if (!wasOnline && isOnline) {
+          _syncCachedData();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isOnline = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _syncCachedData() async {
+    try {
+      final hasPending = await ServiceLocator.syncService.hasPendingSync();
+      if (hasPending) {
+        await ServiceLocator.syncService.syncAllData();
+        // Refresh the UI after sync
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error syncing cached data: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +124,44 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       useCleanStyle: true,
                     ),
                   ),
+
+                  // Offline indicator
+                  if (!_isOnline) ...[
+                    const SizedBox(height: FitLifeTheme.spacingM),
+                    FadeInAnimation(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: FitLifeTheme.spacingM,
+                          vertical: FitLifeTheme.spacingS,
+                        ),
+                        decoration: BoxDecoration(
+                          color: FitLifeTheme.accentOrange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(FitLifeTheme.cardBorderRadius),
+                          border: Border.all(
+                            color: FitLifeTheme.accentOrange.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.wifi_off,
+                              color: FitLifeTheme.accentOrange,
+                              size: 16,
+                            ),
+                            const SizedBox(width: FitLifeTheme.spacingS),
+                            AppText(
+                              'Offline Mode - Showing cached data',
+                              type: AppTextType.bodySmall,
+                              color: FitLifeTheme.accentOrange,
+                              useCleanStyle: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: FitLifeTheme.spacingXL),
 

@@ -11,12 +11,51 @@ import 'checkin_screen.dart';
 import 'auth_wrapper.dart'; // Import the auth wrapper
 import 'ui/theme/theme.dart'; // Import our custom theme
 import 'ui/components/components.dart'; // Import components with transitions
+import 'services/cache_service.dart'; // Import cache service
+import 'services/sync_service.dart'; // Import sync service
+import 'services/workout_service.dart'; // Import workout service
+import 'services/checkin_service.dart'; // Import checkin service
+
+/// Simple service locator for app-wide services
+class ServiceLocator {
+  static CacheService? _cacheService;
+  static SyncService? _syncService;
+
+  static void initialize(CacheService cacheService) {
+    _cacheService = cacheService;
+    _syncService = SyncService(
+      cacheService,
+      WorkoutService(),
+      CheckInService(),
+    );
+  }
+
+  static CacheService get cacheService {
+    if (_cacheService == null) {
+      throw Exception('CacheService not initialized');
+    }
+    return _cacheService!;
+  }
+
+  static SyncService get syncService {
+    if (_syncService == null) {
+      throw Exception('SyncService not initialized');
+    }
+    return _syncService!;
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Initialize cache service
+  final cacheService = CacheService();
+  await cacheService.initialize();
+  ServiceLocator.initialize(cacheService);
+
   runApp(const MyApp());
 }
 

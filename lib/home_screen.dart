@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'ui/components/components.dart';
 import 'services/services.dart';
 import 'models/models.dart';
+import 'main.dart'; // Import for ServiceLocator
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,7 +18,53 @@ class _HomeScreenState extends State<HomeScreen> {
   final ProfileService _profileService = ProfileService();
   final CheckInService _checkInService = CheckInService();
   final AnalyticsService _analyticsService = AnalyticsService();
+  final AIService _aiService = AIService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  bool _isOnline = true; // Track online status
+
+  @override
+  void initState() {
+    super.initState();
+    _checkConnectivity();
+  }
+
+  Future<void> _checkConnectivity() async {
+    try {
+      final wasOnline = _isOnline;
+      final isOnline = await ServiceLocator.cacheService.isOnline();
+
+      if (mounted) {
+        setState(() {
+          _isOnline = isOnline;
+        });
+
+        // If we just came back online, sync cached data
+        if (!wasOnline && isOnline) {
+          _syncCachedData();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isOnline = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _syncCachedData() async {
+    try {
+      final hasPending = await ServiceLocator.syncService.hasPendingSync();
+      if (hasPending) {
+        await ServiceLocator.syncService.syncAllData();
+        // Refresh the UI after sync
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error syncing cached data: $e');
+    }
+  }
 
   // Get user display name
   String get userName {
@@ -74,6 +121,180 @@ class _HomeScreenState extends State<HomeScreen> {
                         useCleanStyle: true,
                       ),
                     ],
+                  ),
+                ),
+
+                // Offline indicator
+                if (!_isOnline) ...[
+                  const SizedBox(height: FitLifeTheme.spacingM),
+                  FadeInAnimation(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: FitLifeTheme.spacingM,
+                        vertical: FitLifeTheme.spacingS,
+                      ),
+                      decoration: BoxDecoration(
+                        color: FitLifeTheme.accentOrange.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(FitLifeTheme.cardBorderRadius),
+                        border: Border.all(
+                          color: FitLifeTheme.accentOrange.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.wifi_off,
+                            color: FitLifeTheme.accentOrange,
+                            size: 16,
+                          ),
+                          const SizedBox(width: FitLifeTheme.spacingS),
+                          AppText(
+                            'Offline Mode - Showing cached data',
+                            type: AppTextType.bodySmall,
+                            color: FitLifeTheme.accentOrange,
+                            useCleanStyle: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: FitLifeTheme.spacingXL),
+
+                // AI Workout Suggestions
+                FadeInAnimation(
+                  child: FutureBuilder<List<WorkoutSuggestion>>(
+                    future: _aiService.getWorkoutSuggestions(limit: 1),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return AppCard(
+                          useCleanStyle: true,
+                          child: Padding(
+                            padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.lightbulb,
+                                      color: FitLifeTheme.accentGreen,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: FitLifeTheme.spacingS),
+                                    AppText(
+                                      'Suggested Workout',
+                                      type: AppTextType.bodyLarge,
+                                      color: FitLifeTheme.primaryText,
+                                      useCleanStyle: true,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: FitLifeTheme.spacingL),
+                                const SizedBox(
+                                  height: 60,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      color: FitLifeTheme.accentGreen,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const SizedBox.shrink(); // Hide if no suggestions or error
+                      }
+
+                      final suggestion = snapshot.data!.first;
+
+                      return AppCard(
+                        useCleanStyle: true,
+                        child: Padding(
+                          padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.lightbulb,
+                                    color: FitLifeTheme.accentGreen,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: FitLifeTheme.spacingS),
+                                  AppText(
+                                    'Suggested Workout',
+                                    type: AppTextType.bodyLarge,
+                                    color: FitLifeTheme.primaryText,
+                                    useCleanStyle: true,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: FitLifeTheme.spacingM),
+                              AppText(
+                                suggestion.exerciseName,
+                                type: AppTextType.headingSmall,
+                                color: FitLifeTheme.primaryText,
+                                useCleanStyle: true,
+                              ),
+                              const SizedBox(height: FitLifeTheme.spacingS),
+                              AppText(
+                                suggestion.reason,
+                                type: AppTextType.bodySmall,
+                                color: FitLifeTheme.primaryText.withOpacity(0.7),
+                                useCleanStyle: true,
+                              ),
+                              const SizedBox(height: FitLifeTheme.spacingM),
+                              Row(
+                                children: [
+                                  _buildSuggestionChip(suggestion.categoryLabel, FitLifeTheme.accentBlue),
+                                  const SizedBox(width: FitLifeTheme.spacingS),
+                                  _buildSuggestionChip(suggestion.difficultyLabel, FitLifeTheme.accentOrange),
+                                ],
+                              ),
+                              const SizedBox(height: FitLifeTheme.spacingM),
+                              Row(
+                                children: [
+                                  AppText(
+                                    '${suggestion.suggestedSets} sets × ${suggestion.suggestedReps} reps',
+                                    type: AppTextType.bodySmall,
+                                    color: FitLifeTheme.primaryText,
+                                    useCleanStyle: true,
+                                  ),
+                                  if (suggestion.suggestedWeight != null) ...[
+                                    const SizedBox(width: FitLifeTheme.spacingM),
+                                    AppText(
+                                      '• ${suggestion.suggestedWeight!.toStringAsFixed(1)}kg',
+                                      type: AppTextType.bodySmall,
+                                      color: FitLifeTheme.primaryText,
+                                      useCleanStyle: true,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: FitLifeTheme.spacingM),
+                              SizedBox(
+                                width: double.infinity,
+                                child: AnimatedButton(
+                                  text: 'Add to Workout',
+                                  icon: Icons.add,
+                                  onPressed: () => _addSuggestedWorkout(suggestion),
+                                  backgroundColor: FitLifeTheme.accentGreen,
+                                  textColor: FitLifeTheme.background,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
 
@@ -852,5 +1073,35 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  // Helper method to build suggestion chips
+  Widget _buildSuggestionChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: FitLifeTheme.spacingS,
+        vertical: FitLifeTheme.spacingXS,
+      ),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(FitLifeTheme.borderRadiusS),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: AppText(
+        label,
+        type: AppTextType.bodySmall,
+        color: color,
+        useCleanStyle: true,
+      ),
+    );
+  }
+
+  // Handle adding suggested workout
+  void _addSuggestedWorkout(WorkoutSuggestion suggestion) {
+    // Navigate to workout screen or show add workout dialog
+    Navigator.pushNamed(context, '/workout');
   }
 }

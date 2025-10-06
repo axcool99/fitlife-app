@@ -2,11 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout.dart';
 import 'fitness_data_service.dart';
+import 'cache_service.dart';
 
 class WorkoutService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FitnessDataService _fitnessDataService = FitnessDataService();
+  final CacheService _cacheService = CacheService();
 
   // Get current user ID
   String? get currentUserId => _auth.currentUser?.uid;
@@ -17,18 +19,39 @@ class WorkoutService {
     return _firestore.collection('users').doc(currentUserId).collection('workouts');
   }
 
-  // Get workouts for current user
+  // Get workouts for current user (with offline support)
   Stream<List<Workout>> getWorkouts() {
     if (currentUserId == null) return Stream.value([]);
 
     return _workoutsCollection
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Workout.fromFirestore(doc)).toList());
+        .asyncMap((snapshot) async {
+          final workouts = snapshot.docs.map((doc) => Workout.fromFirestore(doc)).toList();
+
+          // Cache the workouts for offline use
+          try {
+            await _cacheService.saveWorkouts(workouts);
+          } catch (e) {
+            print('Warning: Failed to cache workouts: $e');
+          }
+
+          return workouts;
+        })
+        .handleError((error) async* {
+          print('Error loading workouts from Firestore: $error');
+          // Return cached data on error (offline mode)
+          try {
+            final cachedWorkouts = await _cacheService.loadWorkouts();
+            yield cachedWorkouts;
+          } catch (cacheError) {
+            print('Error loading cached workouts: $cacheError');
+            yield [];
+          }
+        });
   }
 
-  // Add new workout
+  // Add new workout (with offline support)
   Future<void> addWorkout({
     required String exerciseName,
     required int sets,
@@ -40,7 +63,7 @@ class WorkoutService {
     if (currentUserId == null) throw Exception('User not authenticated');
 
     final workout = Workout(
-      id: '', // Will be set by Firestore
+      id: DateTime.now().millisecondsSinceEpoch.toString(), // Generate ID for offline
       userId: currentUserId!,
       exerciseName: exerciseName,
       sets: sets,
@@ -51,35 +74,72 @@ class WorkoutService {
       createdAt: DateTime.now(),
     );
 
-    await _workoutsCollection.add(workout.toFirestore());
+    try {
+      // Try to save to Firestore first
+      final docRef = await _workoutsCollection.add(workout.toFirestore());
+      // Update with Firestore-generated ID
+      final firestoreWorkout = workout.copyWith(id: docRef.id);
+      await docRef.update({'id': docRef.id});
 
-    // Sync fitness data after adding workout
-    await _fitnessDataService.syncTodayData();
+      // Cache the workout
+      await _cacheService.saveWorkout(firestoreWorkout);
+
+      // Sync fitness data after adding workout
+      await _fitnessDataService.syncTodayData();
+    } catch (e) {
+      print('Failed to save to Firestore, saving to cache: $e');
+      // Save to cache for offline sync later
+      await _cacheService.saveWorkout(workout);
+      // Note: Fitness data sync will happen when back online
+    }
   }
 
-  // Update existing workout
+  // Update existing workout (with offline support)
   Future<void> updateWorkout(Workout workout) async {
     if (currentUserId == null) throw Exception('User not authenticated');
 
-    await _workoutsCollection
-        .doc(workout.id)
-        .update(workout.copyWith(updatedAt: DateTime.now()).toFirestore());
+    final updatedWorkout = workout.copyWith(updatedAt: DateTime.now());
 
-    // Sync fitness data after updating workout
-    await _fitnessDataService.syncTodayData();
+    try {
+      // Try to update in Firestore
+      await _workoutsCollection
+          .doc(workout.id)
+          .update(updatedWorkout.toFirestore());
+
+      // Update cache
+      await _cacheService.saveWorkout(updatedWorkout);
+
+      // Sync fitness data after updating workout
+      await _fitnessDataService.syncTodayData();
+    } catch (e) {
+      print('Failed to update in Firestore, updating cache: $e');
+      // Update in cache for offline sync later
+      await _cacheService.saveWorkout(updatedWorkout);
+    }
   }
 
-  // Delete workout
+  // Delete workout (with offline support)
   Future<void> deleteWorkout(String workoutId) async {
     if (currentUserId == null) throw Exception('User not authenticated');
 
-    await _workoutsCollection.doc(workoutId).delete();
+    try {
+      // Try to delete from Firestore
+      await _workoutsCollection.doc(workoutId).delete();
 
-    // Sync fitness data after deleting workout
-    await _fitnessDataService.syncTodayData();
+      // Remove from cache
+      await _cacheService.removeWorkout(workoutId);
+
+      // Sync fitness data after deleting workout
+      await _fitnessDataService.syncTodayData();
+    } catch (e) {
+      print('Failed to delete from Firestore, marking for deletion in cache: $e');
+      // For offline deletion, we could mark the workout as deleted in cache
+      // For simplicity, we'll just remove it from cache
+      await _cacheService.removeWorkout(workoutId);
+    }
   }
 
-  // Get workouts for today
+  // Get workouts for today (with offline support)
   Stream<List<Workout>> getTodaysWorkouts() {
     if (currentUserId == null) return Stream.value([]);
 
@@ -92,7 +152,42 @@ class WorkoutService {
         .where('createdAt', isLessThan: Timestamp.fromDate(endOfDay))
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Workout.fromFirestore(doc)).toList());
+        .asyncMap((snapshot) async {
+          final todaysWorkouts = snapshot.docs.map((doc) => Workout.fromFirestore(doc)).toList();
+
+          // Cache today's workouts (this will be part of the full workouts cache)
+          try {
+            final allWorkouts = await _cacheService.loadWorkouts();
+            final updatedWorkouts = allWorkouts.where((w) =>
+              !todaysWorkouts.any((tw) => tw.id == w.id)).toList() + todaysWorkouts;
+            await _cacheService.saveWorkouts(updatedWorkouts);
+          } catch (e) {
+            print('Warning: Failed to cache today\'s workouts: $e');
+          }
+
+          return todaysWorkouts;
+        })
+        .handleError((error) async* {
+          print('Error loading today\'s workouts from Firestore: $error');
+          // Return cached workouts filtered for today
+          try {
+            final allCachedWorkouts = await _cacheService.loadWorkouts();
+            final today = DateTime.now();
+            final startOfDay = DateTime(today.year, today.month, today.day);
+            final endOfDay = startOfDay.add(const Duration(days: 1));
+
+            final todaysCachedWorkouts = allCachedWorkouts
+                .where((workout) =>
+                    workout.createdAt.isAfter(startOfDay) &&
+                    workout.createdAt.isBefore(endOfDay))
+                .toList()
+                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+            yield todaysCachedWorkouts;
+          } catch (cacheError) {
+            print('Error loading cached today\'s workouts: $cacheError');
+            yield [];
+          }
+        });
   }
 }
