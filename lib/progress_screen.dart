@@ -311,9 +311,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
                 const SizedBox(height: FitLifeTheme.spacingM),
                 SizedBox(
                   height: 200,
-                  child: LineChart(
-                    LineChartData(
-                      minY: 0, // Ensure Y-axis starts at 0 to prevent below-graph drawing
+                  child: BarChart(
+                    BarChartData(
                       gridData: FlGridData(
                         show: true,
                         drawVerticalLine: false,
@@ -333,16 +332,14 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           sideTitles: SideTitles(
                             showTitles: true,
                             reservedSize: 30,
-                            interval: 1,
                             getTitlesWidget: (value, meta) {
                               final dayIndex = value.toInt();
                               if (dayIndex >= 0 && dayIndex < 7) {
-                                final date = DateTime.now().subtract(Duration(days: 6 - dayIndex));
-                                final weekday = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][date.weekday - 1];
+                                const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 8.0),
                                   child: Text(
-                                    weekday,
+                                    weekdays[dayIndex],
                                     style: TextStyle(
                                       color: FitLifeTheme.primaryText.withOpacity(0.6),
                                       fontSize: 12,
@@ -372,71 +369,37 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         ),
                       ),
                       borderData: FlBorderData(show: false),
-                      clipData: FlClipData.all(), // Prevent line from drawing below chart area
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: snapshot.data!.entries.map((entry) {
-                            final daysAgo = DateTime.now().difference(entry.key).inDays;
-                            return FlSpot((6 - daysAgo).toDouble(), entry.value);
-                          }).toList()..sort((a, b) => a.x.compareTo(b.x)),
-                          isCurved: true,
-                          color: FitLifeTheme.accentBlue,
-                          barWidth: 3,
-                          isStrokeCapRound: true,
-                          dotData: FlDotData(
-                            show: true,
-                            getDotPainter: (spot, percent, barData, index) {
-                              return FlDotCirclePainter(
-                                radius: 4,
-                                color: FitLifeTheme.accentBlue,
-                                strokeWidth: 2,
-                                strokeColor: FitLifeTheme.background,
-                              );
-                            },
-                          ),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: FitLifeTheme.accentBlue.withOpacity(0.1),
-                          ),
-                        ),
-                      ],
-                      lineTouchData: LineTouchData(
+                      barGroups: snapshot.data!.entries.map((entry) {
+                        final daysAgo = DateTime.now().difference(entry.key).inDays;
+                        final dayIndex = (6 - daysAgo).clamp(0, 6);
+                        return BarChartGroupData(
+                          x: dayIndex,
+                          barRods: [
+                            BarChartRodData(
+                              toY: entry.value.toDouble(),
+                              color: FitLifeTheme.accentBlue,
+                              width: 16,
+                              borderRadius: BorderRadius.circular(4),
+                              backDrawRodData: BackgroundBarChartRodData(show: true, toY: 0, color: FitLifeTheme.surfaceColor),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                      barTouchData: BarTouchData(
                         enabled: true,
-                        handleBuiltInTouches: false,
-                        getTouchedSpotIndicator: (barData, spotIndexes) {
-                          return spotIndexes.map((spotIndex) {
-                            return TouchedSpotIndicatorData(
-                              FlLine(color: FitLifeTheme.accentBlue, strokeWidth: 2),
-                              FlDotData(
-                                getDotPainter: (spot, percent, barData, index) =>
-                                    FlDotCirclePainter(
-                                      radius: 6,
-                                      color: FitLifeTheme.accentBlue,
-                                      strokeWidth: 2,
-                                      strokeColor: FitLifeTheme.surfaceColor,
-                                    ),
+                        touchTooltipData: BarTouchTooltipData(
+                          tooltipBgColor: FitLifeTheme.surfaceColor,
+                          tooltipPadding: const EdgeInsets.all(8),
+                          tooltipMargin: 8,
+                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                            return BarTooltipItem(
+                              rod.toY.toInt().toString(),
+                              TextStyle(
+                                color: FitLifeTheme.textPrimary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
                               ),
                             );
-                          }).toList();
-                        },
-                        touchTooltipData: LineTouchTooltipData(
-                          tooltipBgColor: Colors.transparent,
-                          tooltipPadding: EdgeInsets.zero,
-                          tooltipMargin: 8,
-                          tooltipRoundedRadius: 0,
-                          getTooltipItems: (touchedSpots) {
-                            return touchedSpots.map((touchedSpot) {
-                              final value = touchedSpot.y;
-                              if (value == 0) return null;
-                              return LineTooltipItem(
-                                value.toStringAsFixed(0),
-                                TextStyle(
-                                  color: FitLifeTheme.textSecondary,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              );
-                            }).toList();
                           },
                         ),
                       ),
