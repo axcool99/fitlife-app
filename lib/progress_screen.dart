@@ -3,8 +3,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'ui/components/components.dart';
 import 'services/analytics_service.dart';
-import 'services/checkin_service.dart';
-import 'services/gamification_service.dart';
 import 'services/sync_service.dart';
 import 'services/network_service.dart';
 import 'main.dart';
@@ -305,9 +303,66 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   height: 200,
                   child: LineChart(
                     LineChartData(
-                      gridData: FlGridData(show: false),
-                      titlesData: FlTitlesData(show: false),
+                      minY: 0, // Ensure Y-axis starts at 0 to prevent below-graph drawing
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: 50,
+                        getDrawingHorizontalLine: (value) {
+                          return FlLine(
+                            color: FitLifeTheme.dividerColor,
+                            strokeWidth: 1,
+                          );
+                        },
+                      ),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 30,
+                            interval: 1,
+                            getTitlesWidget: (value, meta) {
+                              final dayIndex = value.toInt();
+                              if (dayIndex >= 0 && dayIndex < 7) {
+                                final date = DateTime.now().subtract(Duration(days: 6 - dayIndex));
+                                final weekday = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][date.weekday - 1];
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    weekday,
+                                    style: TextStyle(
+                                      color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return const Text('');
+                            },
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            interval: 100,
+                            reservedSize: 40,
+                            getTitlesWidget: (value, meta) {
+                              return Text(
+                                value.toInt().toString(),
+                                style: TextStyle(
+                                  color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                  fontSize: 12,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
                       borderData: FlBorderData(show: false),
+                      clipData: FlClipData.all(), // Prevent line from drawing below chart area
                       lineBarsData: [
                         LineChartBarData(
                           spots: snapshot.data!.entries.map((entry) {
@@ -319,9 +374,64 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           isCurved: true,
                           color: FitLifeTheme.accentBlue,
                           barWidth: 3,
-                          dotData: FlDotData(show: false),
+                          isStrokeCapRound: true,
+                          dotData: FlDotData(
+                            show: true,
+                            getDotPainter: (spot, percent, barData, index) {
+                              return FlDotCirclePainter(
+                                radius: 4,
+                                color: FitLifeTheme.accentBlue,
+                                strokeWidth: 2,
+                                strokeColor: FitLifeTheme.background,
+                              );
+                            },
+                          ),
+                          belowBarData: BarAreaData(
+                            show: true,
+                            color: FitLifeTheme.accentBlue.withOpacity(0.1),
+                          ),
                         ),
                       ],
+                      lineTouchData: LineTouchData(
+                        enabled: true,
+                        handleBuiltInTouches: false,
+                        getTouchedSpotIndicator: (barData, spotIndexes) {
+                          return spotIndexes.map((spotIndex) {
+                            return TouchedSpotIndicatorData(
+                              FlLine(color: FitLifeTheme.accentBlue, strokeWidth: 2),
+                              FlDotData(
+                                getDotPainter: (spot, percent, barData, index) =>
+                                    FlDotCirclePainter(
+                                      radius: 6,
+                                      color: FitLifeTheme.accentBlue,
+                                      strokeWidth: 2,
+                                      strokeColor: FitLifeTheme.surfaceColor,
+                                    ),
+                              ),
+                            );
+                          }).toList();
+                        },
+                        touchTooltipData: LineTouchTooltipData(
+                          tooltipBgColor: Colors.transparent,
+                          tooltipPadding: EdgeInsets.zero,
+                          tooltipMargin: 8,
+                          tooltipRoundedRadius: 0,
+                          getTooltipItems: (touchedSpots) {
+                            return touchedSpots.map((touchedSpot) {
+                              final value = touchedSpot.y;
+                              if (value == 0) return null;
+                              return LineTooltipItem(
+                                value.toStringAsFixed(0),
+                                TextStyle(
+                                  color: FitLifeTheme.textSecondary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              );
+                            }).toList();
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -373,8 +483,62 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   height: 200,
                   child: BarChart(
                     BarChartData(
-                      gridData: FlGridData(show: false),
-                      titlesData: FlTitlesData(show: false),
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: 1,
+                        getDrawingHorizontalLine: (value) {
+                          return FlLine(
+                            color: FitLifeTheme.dividerColor,
+                            strokeWidth: 1,
+                          );
+                        },
+                      ),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 30,
+                            getTitlesWidget: (value, meta) {
+                              final dayIndex = value.toInt();
+                              if (dayIndex >= 0 && dayIndex < 7) {
+                                const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    weekdays[dayIndex],
+                                    style: TextStyle(
+                                      color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return const Text('');
+                            },
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            interval: 1,
+                            reservedSize: 30,
+                            getTitlesWidget: (value, meta) {
+                              if (value == 0) return const Text('');
+                              return Text(
+                                value.toInt().toString(),
+                                style: TextStyle(
+                                  color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                  fontSize: 12,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
                       borderData: FlBorderData(show: false),
                       barGroups: snapshot.data!.entries.map((entry) {
                         final dayIndex = entry.key.weekday - 1;
@@ -386,10 +550,33 @@ class _ProgressScreenState extends State<ProgressScreen> {
                               color: FitLifeTheme.accentPurple,
                               width: 16,
                               borderRadius: BorderRadius.circular(4),
+                              backDrawRodData: BackgroundBarChartRodData(
+                                show: true,
+                                toY: 0,
+                                color: FitLifeTheme.surfaceColor,
+                              ),
                             ),
                           ],
                         );
                       }).toList(),
+                      barTouchData: BarTouchData(
+                        enabled: true,
+                        touchTooltipData: BarTouchTooltipData(
+                          tooltipBgColor: FitLifeTheme.surfaceColor,
+                          tooltipPadding: const EdgeInsets.all(8),
+                          tooltipMargin: 8,
+                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                            return BarTooltipItem(
+                              rod.toY.toInt().toString(),
+                              TextStyle(
+                                color: FitLifeTheme.textPrimary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                   ),
                 ),
