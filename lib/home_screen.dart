@@ -651,6 +651,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       final weightData = weightSnapshot.data ?? [];
                       final hasRecentCheckIns = weightData.isNotEmpty;
 
+                      final weightAxis = _calculateWeightChartYAxis(weightData);
+                      // Additional safety check: ensure interval is valid
+                      final safeWeightInterval = weightAxis['interval']!.clamp(1.0, 50.0);
+
                       return AppCard(
                         useCleanStyle: true,
                         child: Padding(
@@ -680,8 +684,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                   height: 200,
                                   child: LineChart(
                                     LineChartData(
-                                      minY: _calculateWeightChartYAxis(weightData)['minY'],
-                                      maxY: _calculateWeightChartYAxis(weightData)['maxY'],
+                                      minY: weightAxis['minY'],
+                                      maxY: weightAxis['maxY'],
                                       gridData: FlGridData(
                                         show: true,
                                         drawVerticalLine: false,
@@ -725,7 +729,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         leftTitles: AxisTitles(
                                           sideTitles: SideTitles(
                                             showTitles: true,
-                                            interval: _calculateWeightChartYAxis(weightData)['interval'],
+                                            interval: safeWeightInterval,
                                             reservedSize: 50,
                                             getTitlesWidget: (value, meta) {
                                               return Text(
@@ -859,7 +863,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       final hasCaloriesData = spots.isNotEmpty;
 
                       // Calculate proper intervals to prevent too many axis labels
-                      final intervals = hasCaloriesData ? _calculateCaloriesChartIntervals(data) : {'horizontalInterval': 100.0, 'verticalInterval': 100.0};
+                      final intervals = hasCaloriesData ? _calculateCaloriesChartIntervals(data) : {'horizontalInterval': 50.0, 'verticalInterval': 100.0};
+
+                      // Additional safety check: ensure intervals are valid
+                      final safeIntervals = {
+                        'horizontalInterval': intervals['horizontalInterval']!.clamp(10.0, 1000.0),
+                        'verticalInterval': intervals['verticalInterval']!.clamp(10.0, 500.0),
+                      };
 
                       return AppCard(
                         useCleanStyle: true,
@@ -894,7 +904,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       gridData: FlGridData(
                                         show: true,
                                         drawVerticalLine: false,
-                                        horizontalInterval: intervals['horizontalInterval']!,
+                                        horizontalInterval: safeIntervals['horizontalInterval']!,
                                         getDrawingHorizontalLine: (value) {
                                           return FlLine(
                                             color: FitLifeTheme.dividerColor,
@@ -934,7 +944,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         leftTitles: AxisTitles(
                                           sideTitles: SideTitles(
                                             showTitles: true,
-                                            interval: intervals['verticalInterval']!,
+                                            interval: safeIntervals['verticalInterval']!,
                                             reservedSize: 40,
                                             getTitlesWidget: (value, meta) {
                                               return Text(
@@ -1318,8 +1328,11 @@ class _HomeScreenState extends State<HomeScreen> {
       interval = ((interval + 4) ~/ 5) * 5.0;
     }
 
-    // Ensure interval is at least 1 and reasonable
+    // CRITICAL: Ensure interval is never 0 or too small to prevent infinite labels
     interval = interval.clamp(1.0, 50.0);
+    if (interval < 1.0) {
+      interval = 5.0; // Absolute minimum safe interval
+    }
 
     return {'minY': minY, 'maxY': maxY, 'interval': interval};
   }
@@ -1334,6 +1347,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final maxCalories = data.values.reduce((a, b) => a > b ? a : b);
     final minCalories = 0.0; // Always start from 0
     final range = maxCalories - minCalories;
+
+    // If range is 0 or very small, use safe defaults
+    if (range <= 0) {
+      return {'horizontalInterval': 50.0, 'verticalInterval': 100.0};
+    }
 
     // Calculate vertical interval (Y-axis)
     double verticalInterval = 50.0; // Default
@@ -1352,12 +1370,15 @@ class _HomeScreenState extends State<HomeScreen> {
     final calculatedLabels = (range / verticalInterval).ceil();
     if (calculatedLabels > maxLabels) {
       verticalInterval = (range / maxLabels).ceilToDouble();
-      // Round to nearest 25 for clean numbers
+      // Round to nearest 25 for clean numbers, but ensure minimum
       verticalInterval = ((verticalInterval + 24) ~/ 25) * 25.0;
     }
 
-    // Ensure reasonable bounds
+    // CRITICAL: Ensure interval is never 0 or too small to prevent infinite labels
     verticalInterval = verticalInterval.clamp(10.0, 500.0);
+    if (verticalInterval < 1.0) {
+      verticalInterval = 10.0; // Absolute minimum safe interval
+    }
 
     // Horizontal interval is always 1 day for 7 days max, so no issue
     return {
