@@ -9,6 +9,8 @@ class AnimatedButton extends StatefulWidget {
   final IconData? icon;
   final double? width;
   final double? height;
+  final double? textSize;
+  final double? iconPadding;
 
   const AnimatedButton({
     super.key,
@@ -18,6 +20,8 @@ class AnimatedButton extends StatefulWidget {
     this.icon,
     this.width,
     this.height,
+    this.textSize,
+    this.iconPadding,
   });
 
   @override
@@ -152,13 +156,13 @@ class _AnimatedButtonState extends State<AnimatedButton> with TickerProviderStat
                                 color: FitLifeTheme.background,
                                 size: 24,
                               ),
-                              const SizedBox(width: 12),
+                              SizedBox(width: widget.iconPadding ?? 12),
                             ],
                             Text(
                               widget.text,
                               style: TextStyle(
                                 fontFamily: FitLifeTheme.fontFamily,
-                                fontSize: 16,
+                                fontSize: widget.textSize ?? 16,
                                 fontWeight: FontWeight.bold,
                                 color: FitLifeTheme.background,
                                 letterSpacing: 0.5,

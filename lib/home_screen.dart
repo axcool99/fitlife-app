@@ -282,14 +282,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ),
                               const SizedBox(height: FitLifeTheme.spacingM),
-                              Center(
-                                child: SizedBox(
-                                  width: 200, // Reduced width for smaller button
-                                  child: AnimatedButton(
-                                    text: 'Add to Workout',
-                                    icon: Icons.add,
-                                    onPressed: () => _addSuggestedWorkout(suggestion),
-                                  ),
+                              SizedBox(
+                                width: double.infinity,
+                                child: AnimatedButton(
+                                  text: 'Add to Workout',
+                                  icon: Icons.add,
+                                  textSize: 14, // Smaller text
+                                  iconPadding: 8, // Less padding between icon and text
+                                  onPressed: () => _addSuggestedWorkout(suggestion),
                                 ),
                               ),
                             ],
