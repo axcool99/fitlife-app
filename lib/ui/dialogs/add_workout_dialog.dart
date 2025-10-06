@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../components/components.dart';
 import '../../services/workout_service.dart';
+import '../../services/ai_service.dart';
 
 class AddWorkoutDialog extends StatefulWidget {
-  const AddWorkoutDialog({super.key});
+  final WorkoutSuggestion? suggestion;
+
+  const AddWorkoutDialog({super.key, this.suggestion});
 
   @override
   State<AddWorkoutDialog> createState() => _AddWorkoutDialogState();
@@ -20,6 +23,20 @@ class _AddWorkoutDialogState extends State<AddWorkoutDialog> {
   final _notesController = TextEditingController();
 
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.suggestion != null) {
+      _exerciseController.text = widget.suggestion!.exerciseName;
+      _setsController.text = widget.suggestion!.suggestedSets.toString();
+      _repsController.text = widget.suggestion!.suggestedReps.toString();
+      if (widget.suggestion!.suggestedWeight != null) {
+        _weightController.text = widget.suggestion!.suggestedWeight!.toStringAsFixed(1);
+      }
+      _notesController.text = 'AI Suggested: ${widget.suggestion!.reason}';
+    }
+  }
 
   @override
   void dispose() {

@@ -29,7 +29,7 @@ class _MainScaffoldState extends State<MainScaffold> {
   // List of screens for IndexedStack (preserves state)
   final List<Widget> _screens = [
     const HomeScreen(),
-    const WorkoutScreen(),
+    WorkoutScreen(key: WorkoutScreen.screenKey),
     const CheckInScreen(),
     const ProgressScreen(),
     const ProfileScreen(),

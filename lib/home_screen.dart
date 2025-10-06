@@ -5,6 +5,8 @@ import 'ui/components/components.dart';
 import 'services/services.dart';
 import 'models/models.dart';
 import 'main.dart'; // Import for ServiceLocator
+import 'main_scaffold.dart';
+import 'workout_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -1099,7 +1101,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Handle adding suggested workout
   void _addSuggestedWorkout(WorkoutSuggestion suggestion) {
-    // Navigate to workout screen or show add workout dialog
-    Navigator.pushNamed(context, '/workout');
+    // Navigate to workout tab and show add workout dialog with suggestion
+    MainScaffold.navigateToTab(1); // Switch to workout tab (index 1)
+    // Use a slight delay to ensure the tab switch completes before showing dialog
+    Future.delayed(const Duration(milliseconds: 100), () {
+      WorkoutScreen.showAddWorkoutDialog(suggestion);
+    });
   }
 }

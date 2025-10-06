@@ -2,17 +2,28 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'ui/components/components.dart';
 import 'services/workout_service.dart';
+import 'services/ai_service.dart';
 import 'models/workout.dart';
 import 'main.dart'; // Import for ServiceLocator
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
 
+  // Global key to access WorkoutScreen state from anywhere
+  static final GlobalKey<_WorkoutScreenState> screenKey = GlobalKey<_WorkoutScreenState>();
+
+  // Static method to show add workout dialog with suggestion
+  static void showAddWorkoutDialog([WorkoutSuggestion? suggestion]) {
+    screenKey.currentState?._showAddWorkoutDialog(suggestion);
+  }
+
   @override
-  _WorkoutScreenState createState() => _WorkoutScreenState();
+  _WorkoutScreenState createState() => _WorkoutScreenState(key: screenKey);
 }
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
+  _WorkoutScreenState({Key? key}) : super();
+
   final WorkoutService _workoutService = WorkoutService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -65,6 +76,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     showDialog(
       context: context,
       builder: (context) => AddWorkoutDialog(),
+    );
+  }
+
+  void _showAddWorkoutDialog(WorkoutSuggestion? suggestion) {
+    showDialog(
+      context: context,
+      builder: (context) => AddWorkoutDialog(suggestion: suggestion),
     );
   }
 
