@@ -30,11 +30,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _isOnline = true; // Track online status
 
+  // Cache for async operations to prevent multiple calls
+  Future<List<WorkoutSuggestion>>? _workoutSuggestionsFuture;
+  Future<GamificationSummary>? _gamificationSummaryFuture;
+  Future<Map<DateTime, double>>? _caloriesDataFuture;
+
   @override
   void initState() {
     super.initState();
     _checkConnectivity();
     _setupConnectivityListener();
+    _initializeFutures();
+  }
+
+  void _initializeFutures() {
+    _workoutSuggestionsFuture = _aiService.getWorkoutSuggestions(limit: 1).timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => <WorkoutSuggestion>[],
+    );
+    _gamificationSummaryFuture = _gamificationService.getGamificationSummary().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => GamificationSummary(
+        currentStreak: 0,
+        longestStreak: 0,
+        totalBadges: 0,
+        recentBadges: [],
+        totalWorkouts: 0,
+      ),
+    );
+    _caloriesDataFuture = _analyticsService.getDailyCaloriesBurned().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => <DateTime, double>{},
+    );
   }
 
   void _setupConnectivityListener() {
@@ -211,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // AI Workout Suggestions
                 FadeInAnimation(
                   child: FutureBuilder<List<WorkoutSuggestion>>(
-                    future: _aiService.getWorkoutSuggestions(limit: 1),
+                    future: _workoutSuggestionsFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return AppCard(
@@ -346,9 +373,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: FitLifeTheme.spacingXL),
 
                 // Gamification Card - Streaks and Badges
+                // Your Progress Section
                 FadeInAnimation(
                   child: FutureBuilder<GamificationSummary>(
-                    future: _gamificationService.getGamificationSummary(),
+                    future: _gamificationSummaryFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return AppCard(
@@ -799,7 +827,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Daily Calories Burned Chart
                 FadeInAnimation(
                   child: FutureBuilder<Map<DateTime, double>>(
-                    future: _analyticsService.getDailyCaloriesBurned(),
+                    future: _caloriesDataFuture,
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return _buildChartPlaceholder('Loading calories data...');
