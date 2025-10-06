@@ -175,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         return AppCard(
                           useCleanStyle: true,
                           child: Padding(
-                            padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+                            padding: const EdgeInsets.all(FitLifeTheme.spacingS),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -219,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       return AppCard(
                         useCleanStyle: true,
                         child: Padding(
-                          padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+                          padding: const EdgeInsets.all(FitLifeTheme.spacingS),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -282,12 +282,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ),
                               const SizedBox(height: FitLifeTheme.spacingM),
-                              SizedBox(
-                                width: double.infinity,
-                                child: AnimatedButton(
-                                  text: 'Add to Workout',
-                                  icon: Icons.add,
-                                  onPressed: () => _addSuggestedWorkout(suggestion),
+                              Center(
+                                child: SizedBox(
+                                  width: 200, // Reduced width for smaller button
+                                  child: AnimatedButton(
+                                    text: 'Add to Workout',
+                                    icon: Icons.add,
+                                    onPressed: () => _addSuggestedWorkout(suggestion),
+                                  ),
                                 ),
                               ),
                             ],

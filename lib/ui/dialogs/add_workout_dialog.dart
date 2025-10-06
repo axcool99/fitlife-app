@@ -34,7 +34,7 @@ class _AddWorkoutDialogState extends State<AddWorkoutDialog> {
       if (widget.suggestion!.suggestedWeight != null) {
         _weightController.text = widget.suggestion!.suggestedWeight!.toStringAsFixed(1);
       }
-      _notesController.text = 'AI Suggested: ${widget.suggestion!.reason}';
+      _notesController.text = 'AI Suggested.';
     }
   }
 
