@@ -1042,17 +1042,19 @@ class _ProgressScreenState extends State<ProgressScreen> {
   List<FlSpot> _generateWeightChartData(List<CheckIn> checkIns) {
     List<FlSpot> spots = [];
 
+    // Filter out invalid check-ins (0kg or negative weights) to prevent chart distortion
+    final validCheckIns = checkIns.where((checkIn) => checkIn.weight > 0).toList();
+
     // Create spots for each day of the last 7 days
     // i=0 represents 6 days ago, i=6 represents today
     for (int i = 0; i < 7; i++) {
       final targetDate = DateTime.now().subtract(Duration(days: 6 - i));
 
-      // Find all check-ins for this specific day
-      final dayCheckIns = checkIns.where((checkIn) {
+      // Find all valid check-ins for this specific day
+      final dayCheckIns = validCheckIns.where((checkIn) {
         return checkIn.date.year == targetDate.year &&
                checkIn.date.month == targetDate.month &&
-               checkIn.date.day == targetDate.day &&
-               checkIn.weight > 0; // Only include valid weights
+               checkIn.date.day == targetDate.day;
       }).toList();
 
       if (dayCheckIns.isNotEmpty) {
@@ -1070,7 +1072,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   /// Calculate dynamic Y-axis range for weight chart based on user's last weight
   /// Returns minY, maxY, and interval for the chart
   Map<String, double> _calculateWeightChartYAxis(List<CheckIn> checkIns) {
-    // Filter out invalid weights (<= 0)
+    // Filter out invalid weights (0kg or negative) to prevent chart scaling issues
     final validCheckIns = checkIns.where((checkIn) => checkIn.weight > 0).toList();
 
     if (validCheckIns.isEmpty) {
