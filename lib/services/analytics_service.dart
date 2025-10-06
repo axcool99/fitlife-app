@@ -93,9 +93,9 @@ class AnalyticsService {
           calories += (workout.duration! / 60.0) * 100; // ~100 calories per hour
         }
 
-        // Add calories based on weight (if available) - rough estimate
-        if (workout.weight != null) {
-          calories += workout.weight! * 0.5; // Rough multiplier
+        // Add calories based on weight (if available and positive) - rough estimate
+        if (workout.weight != null && workout.weight! > 0) {
+          calories += workout.weight! * 0.5; // Rough multiplier - only for positive weights
         }
 
         // Ensure calories are never negative

@@ -316,7 +316,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           .map((entry) {
                         final daysAgo = DateTime.now().difference(entry.key).inDays;
                         return FlSpot((6 - daysAgo).toDouble(), entry.value);
-                      }).toList();
+                      })
+                          .toList()
+                        ..sort((a, b) => a.x.compareTo(b.x)); // Sort by x-axis (date) for proper rendering
 
                       if (spots.every((spot) => spot.y == 0)) {
                         return _buildChartPlaceholder('Start working out to see your calorie burn!');
