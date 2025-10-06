@@ -286,8 +286,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                   text: 'Add to Workout',
                                   icon: Icons.add,
                                   onPressed: () => _addSuggestedWorkout(suggestion),
-                                  backgroundColor: FitLifeTheme.accentGreen,
-                                  textColor: FitLifeTheme.background,
                                 ),
                               ),
                             ],
@@ -1084,7 +1082,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(FitLifeTheme.borderRadiusS),
+        borderRadius: BorderRadius.circular(8.0),
         border: Border.all(
           color: color.withOpacity(0.3),
           width: 1,
