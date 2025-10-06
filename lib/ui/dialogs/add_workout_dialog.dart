@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:flutter/services.dart';
 import '../components/components.dart';
 import '../../services/workout_service.dart';
+import '../../services/gamification_service.dart';
+import '../../models/badge.dart' as badge_model;
 import '../../services/ai_service.dart';
+import '../../main.dart'; // Import for getIt
 
 class AddWorkoutDialog extends StatefulWidget {
   final WorkoutSuggestion? suggestion;
@@ -55,7 +59,7 @@ class _AddWorkoutDialogState extends State<AddWorkoutDialog> {
     setState(() => _isLoading = true);
 
     try {
-      await WorkoutService().addWorkout(
+      await getIt<WorkoutService>().addWorkout(
         exerciseName: _exerciseController.text.trim(),
         sets: int.parse(_setsController.text),
         reps: int.parse(_repsController.text),
@@ -64,10 +68,19 @@ class _AddWorkoutDialogState extends State<AddWorkoutDialog> {
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       );
 
+      // Check for new badges after workout is added
+      final gamificationService = getIt<GamificationService>();
+      final newBadges = await gamificationService.checkAndAwardBadges();
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Workout added successfully!')),
-        );
+        if (newBadges.isNotEmpty) {
+          // Show badge notification dialog
+          _showBadgeNotification(newBadges);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Workout added successfully!')),
+          );
+        }
         Navigator.of(context).pop();
       }
     } catch (e) {
@@ -366,5 +379,112 @@ class _AddWorkoutDialogState extends State<AddWorkoutDialog> {
         ),
       ),
     );
+  }
+
+  void _showBadgeNotification(List<badge_model.Badge> newBadges) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: FitLifeTheme.backgroundColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.emoji_events,
+              color: FitLifeTheme.accentGreen,
+              size: 28,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Achievement Unlocked!',
+              style: FitLifeTheme.headingSmall.copyWith(
+                color: FitLifeTheme.accentGreen,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Congratulations! You\'ve earned ${newBadges.length} new badge${newBadges.length > 1 ? 's' : ''}:',
+              style: FitLifeTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            ...newBadges.map((badge) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    _getBadgeIcon(badge.category),
+                    color: _getBadgeColor(badge.category),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          badge.name,
+                          style: FitLifeTheme.bodyMedium.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          badge.description,
+                          style: FitLifeTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Awesome!',
+              style: TextStyle(color: FitLifeTheme.accentGreen),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getBadgeIcon(badge_model.BadgeCategory category) {
+    switch (category) {
+      case badge_model.BadgeCategory.streak:
+        return Icons.local_fire_department;
+      case badge_model.BadgeCategory.workouts:
+        return Icons.fitness_center;
+      case badge_model.BadgeCategory.strength:
+        return Icons.monitor_weight;
+      case badge_model.BadgeCategory.consistency:
+        return Icons.calendar_today;
+      case badge_model.BadgeCategory.achievement:
+        return Icons.emoji_events;
+    }
+  }
+
+  Color _getBadgeColor(badge_model.BadgeCategory category) {
+    switch (category) {
+      case badge_model.BadgeCategory.streak:
+        return FitLifeTheme.accentOrange;
+      case badge_model.BadgeCategory.workouts:
+        return FitLifeTheme.accentGreen;
+      case badge_model.BadgeCategory.strength:
+        return FitLifeTheme.accentBlue;
+      case badge_model.BadgeCategory.consistency:
+        return FitLifeTheme.accentPurple;
+      case badge_model.BadgeCategory.achievement:
+        return FitLifeTheme.textPrimary;
+    }
   }
 }

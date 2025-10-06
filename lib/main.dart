@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:get_it/get_it.dart';
 import 'firebase_options.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
@@ -15,35 +16,14 @@ import 'services/cache_service.dart'; // Import cache service
 import 'services/sync_service.dart'; // Import sync service
 import 'services/workout_service.dart'; // Import workout service
 import 'services/checkin_service.dart'; // Import checkin service
+import 'services/fitness_data_service.dart'; // Import fitness data service
+import 'services/profile_service.dart'; // Import profile service
+import 'services/analytics_service.dart'; // Import analytics service
+import 'services/ai_service.dart'; // Import AI service
+import 'services/gamification_service.dart'; // Import gamification service
 
-/// Simple service locator for app-wide services
-class ServiceLocator {
-  static CacheService? _cacheService;
-  static SyncService? _syncService;
-
-  static void initialize(CacheService cacheService) {
-    _cacheService = cacheService;
-    _syncService = SyncService(
-      cacheService,
-      WorkoutService(),
-      CheckInService(),
-    );
-  }
-
-  static CacheService get cacheService {
-    if (_cacheService == null) {
-      throw Exception('CacheService not initialized');
-    }
-    return _cacheService!;
-  }
-
-  static SyncService get syncService {
-    if (_syncService == null) {
-      throw Exception('SyncService not initialized');
-    }
-    return _syncService!;
-  }
-}
+/// Global service locator instance
+final getIt = GetIt.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,10 +31,23 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Initialize cache service
+  // Initialize and register services with dependency injection
   final cacheService = CacheService();
   await cacheService.initialize();
-  ServiceLocator.initialize(cacheService);
+
+  getIt.registerSingleton<CacheService>(cacheService);
+  getIt.registerSingleton<FitnessDataService>(FitnessDataService());
+  getIt.registerSingleton<WorkoutService>(WorkoutService(getIt<CacheService>()));
+  getIt.registerSingleton<CheckInService>(CheckInService(getIt<CacheService>()));
+  getIt.registerSingleton<ProfileService>(ProfileService());
+  getIt.registerSingleton<AnalyticsService>(AnalyticsService());
+  getIt.registerSingleton<AIService>(AIService(getIt<AnalyticsService>(), getIt<ProfileService>()));
+  getIt.registerSingleton<GamificationService>(GamificationService(getIt<AnalyticsService>()));
+  getIt.registerSingleton<SyncService>(SyncService(
+    getIt<CacheService>(),
+    getIt<WorkoutService>(),
+    getIt<CheckInService>(),
+  ));
 
   runApp(const MyApp());
 }

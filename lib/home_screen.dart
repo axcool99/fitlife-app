@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'ui/components/components.dart';
 import 'services/services.dart';
 import 'models/models.dart';
-import 'main.dart'; // Import for ServiceLocator
+import 'main.dart'; // Import for getIt
 import 'main_scaffold.dart';
 import 'workout_screen.dart';
 
@@ -16,11 +17,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final FitnessDataService _fitnessDataService = FitnessDataService();
-  final ProfileService _profileService = ProfileService();
-  final CheckInService _checkInService = CheckInService();
-  final AnalyticsService _analyticsService = AnalyticsService();
-  final AIService _aiService = AIService();
+  final FitnessDataService _fitnessDataService = getIt<FitnessDataService>();
+  final ProfileService _profileService = getIt<ProfileService>();
+  final CheckInService _checkInService = getIt<CheckInService>();
+  final AnalyticsService _analyticsService = getIt<AnalyticsService>();
+  final AIService _aiService = getIt<AIService>();
+  final GamificationService _gamificationService = getIt<GamificationService>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isOnline = true; // Track online status
@@ -34,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _checkConnectivity() async {
     try {
       final wasOnline = _isOnline;
-      final isOnline = await ServiceLocator.cacheService.isOnline();
+      final isOnline = await getIt<CacheService>().isOnline();
 
       if (mounted) {
         setState(() {
@@ -57,9 +59,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _syncCachedData() async {
     try {
-      final hasPending = await ServiceLocator.syncService.hasPendingSync();
+      final hasPending = await getIt<SyncService>().hasPendingSync();
       if (hasPending) {
-        await ServiceLocator.syncService.syncAllData();
+        await getIt<SyncService>().syncAllData();
         // Refresh the UI after sync
         setState(() {});
       }
@@ -289,9 +291,243 @@ class _HomeScreenState extends State<HomeScreen> {
                                   icon: Icons.add,
                                   textSize: 14, // Smaller text
                                   iconPadding: 8, // Less padding between icon and text
+                                  height: 38,
                                   onPressed: () => _addSuggestedWorkout(suggestion),
                                 ),
                               ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: FitLifeTheme.spacingXL),
+
+                // Gamification Card - Streaks and Badges
+                FadeInAnimation(
+                  child: FutureBuilder<GamificationSummary>(
+                    future: _gamificationService.getGamificationSummary(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return AppCard(
+                          useCleanStyle: true,
+                          child: Padding(
+                            padding: const EdgeInsets.all(FitLifeTheme.spacingM),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AppText(
+                                  'Your Progress',
+                                  type: AppTextType.headingSmall,
+                                  color: FitLifeTheme.primaryText,
+                                  useCleanStyle: true,
+                                ),
+                                const SizedBox(height: FitLifeTheme.spacingL),
+                                const Center(
+                                  child: CircularProgressIndicator(
+                                    color: FitLifeTheme.accentGreen,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      if (snapshot.hasError) {
+                        return AppCard(
+                          useCleanStyle: true,
+                          child: Padding(
+                            padding: const EdgeInsets.all(FitLifeTheme.spacingM),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AppText(
+                                  'Your Progress',
+                                  type: AppTextType.headingSmall,
+                                  color: FitLifeTheme.primaryText,
+                                  useCleanStyle: true,
+                                ),
+                                const SizedBox(height: FitLifeTheme.spacingM),
+                                AppText(
+                                  'Unable to load progress data',
+                                  type: AppTextType.bodySmall,
+                                  color: FitLifeTheme.textSecondary,
+                                  useCleanStyle: true,
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      final summary = snapshot.data!;
+                      return AppCard(
+                        useCleanStyle: true,
+                        child: Padding(
+                          padding: const EdgeInsets.all(FitLifeTheme.spacingM),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  AppText(
+                                    'Your Progress',
+                                    type: AppTextType.headingSmall,
+                                    color: FitLifeTheme.primaryText,
+                                    useCleanStyle: true,
+                                  ),
+                                  if (summary.recentBadges.isNotEmpty)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: FitLifeTheme.spacingS,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: FitLifeTheme.accentGreen.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.emoji_events,
+                                            size: 14,
+                                            color: FitLifeTheme.accentGreen,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          AppText(
+                                            '${summary.recentBadges.length}',
+                                            type: AppTextType.bodySmall,
+                                            color: FitLifeTheme.accentGreen,
+                                            useCleanStyle: true,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: FitLifeTheme.spacingL),
+
+                              // Streak Section
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(FitLifeTheme.spacingS),
+                                    decoration: BoxDecoration(
+                                      color: summary.currentStreak > 0
+                                          ? FitLifeTheme.accentOrange.withOpacity(0.1)
+                                          : FitLifeTheme.surfaceColor,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      summary.currentStreak > 0 ? Icons.local_fire_department : Icons.schedule,
+                                      color: summary.currentStreak > 0
+                                          ? FitLifeTheme.accentOrange
+                                          : FitLifeTheme.textSecondary,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: FitLifeTheme.spacingM),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        AppText(
+                                          summary.currentStreak > 0
+                                              ? '${summary.currentStreak} Day Streak!'
+                                              : 'Start Your Streak',
+                                          type: AppTextType.bodyMedium,
+                                          color: FitLifeTheme.primaryText,
+                                          useCleanStyle: true,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        AppText(
+                                          summary.currentStreak > 0
+                                              ? 'Longest: ${summary.longestStreak} days'
+                                              : 'Work out today to begin',
+                                          type: AppTextType.bodySmall,
+                                          color: FitLifeTheme.textSecondary,
+                                          useCleanStyle: true,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: FitLifeTheme.spacingL),
+
+                              // Stats Row
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  _buildStatItem(
+                                    '${summary.totalWorkouts}',
+                                    'Workouts',
+                                    Icons.fitness_center,
+                                  ),
+                                  _buildStatItem(
+                                    '${summary.totalBadges}',
+                                    'Badges',
+                                    Icons.emoji_events,
+                                  ),
+                                  _buildStatItem(
+                                    '${summary.longestStreak}',
+                                    'Best Streak',
+                                    Icons.local_fire_department,
+                                  ),
+                                ],
+                              ),
+
+                              // Recent Badges
+                              if (summary.recentBadges.isNotEmpty) ...[
+                                const SizedBox(height: FitLifeTheme.spacingL),
+                                AppText(
+                                  'Recent Badges',
+                                  type: AppTextType.bodyMedium,
+                                  color: FitLifeTheme.primaryText,
+                                  useCleanStyle: true,
+                                ),
+                                const SizedBox(height: FitLifeTheme.spacingM),
+                                SizedBox(
+                                  height: 60,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: summary.recentBadges.length,
+                                    itemBuilder: (context, index) {
+                                      final badge = summary.recentBadges[index];
+                                      return Container(
+                                        width: 50,
+                                        margin: const EdgeInsets.only(right: FitLifeTheme.spacingM),
+                                        decoration: BoxDecoration(
+                                          color: Color(badge.colorValue).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              _getIconFromName(badge.icon),
+                                              color: Color(badge.colorValue),
+                                              size: 20,
+                                            ),
+                                            const SizedBox(height: 2),
+                                            AppText(
+                                              badge.title.split(' ')[0], // Show first word
+                                              type: AppTextType.bodySmall,
+                                              color: Color(badge.colorValue),
+                                              useCleanStyle: true,
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -1099,6 +1335,50 @@ class _HomeScreenState extends State<HomeScreen> {
         useCleanStyle: true,
       ),
     );
+  }
+
+  Widget _buildStatItem(String value, String label, IconData icon) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          color: FitLifeTheme.accentGreen,
+          size: 20,
+        ),
+        const SizedBox(height: FitLifeTheme.spacingXS),
+        AppText(
+          value,
+          type: AppTextType.bodyMedium,
+          color: FitLifeTheme.primaryText,
+          useCleanStyle: true,
+        ),
+        AppText(
+          label,
+          type: AppTextType.bodySmall,
+          color: FitLifeTheme.textSecondary,
+          useCleanStyle: true,
+        ),
+      ],
+    );
+  }
+
+  IconData _getIconFromName(String iconName) {
+    switch (iconName) {
+      case 'local_fire_department':
+        return Icons.local_fire_department;
+      case 'emoji_events':
+        return Icons.emoji_events;
+      case 'fitness_center':
+        return Icons.fitness_center;
+      case 'sports_handball':
+        return Icons.sports_handball;
+      case 'military_tech':
+        return Icons.military_tech;
+      case 'calendar_month':
+        return Icons.calendar_month;
+      default:
+        return Icons.emoji_events;
+    }
   }
 
   // Handle adding suggested workout

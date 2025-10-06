@@ -6,8 +6,10 @@ import 'profile_service.dart';
 
 /// AI Service for generating workout suggestions based on user history and goals
 class AIService {
-  final AnalyticsService _analyticsService = AnalyticsService();
-  final ProfileService _profileService = ProfileService();
+  final AnalyticsService _analyticsService;
+  final ProfileService _profileService;
+
+  AIService(this._analyticsService, this._profileService);
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   String? get currentUserId => _auth.currentUser?.uid;

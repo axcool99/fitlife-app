@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'ui/components/components.dart';
 import 'services/workout_service.dart';
 import 'services/ai_service.dart';
+import 'services/cache_service.dart';
+import 'services/sync_service.dart';
 import 'models/workout.dart';
-import 'main.dart'; // Import for ServiceLocator
+import 'main.dart'; // Import for getIt
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
@@ -24,7 +27,7 @@ class WorkoutScreen extends StatefulWidget {
 class _WorkoutScreenState extends State<WorkoutScreen> {
   _WorkoutScreenState({Key? key}) : super();
 
-  final WorkoutService _workoutService = WorkoutService();
+  final WorkoutService _workoutService = getIt<WorkoutService>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isOnline = true; // Track online status
@@ -38,7 +41,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Future<void> _checkConnectivity() async {
     try {
       final wasOnline = _isOnline;
-      final isOnline = await ServiceLocator.cacheService.isOnline();
+      final isOnline = await getIt<CacheService>().isOnline();
 
       if (mounted) {
         setState(() {
@@ -61,9 +64,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   Future<void> _syncCachedData() async {
     try {
-      final hasPending = await ServiceLocator.syncService.hasPendingSync();
+      final hasPending = await getIt<SyncService>().hasPendingSync();
       if (hasPending) {
-        await ServiceLocator.syncService.syncAllData();
+        await getIt<SyncService>().syncAllData();
         // Refresh the UI after sync
         setState(() {});
       }

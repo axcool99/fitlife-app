@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'ui/components/components.dart';
 import 'services/checkin_service.dart';
 import 'models/checkin.dart';
 import 'main_scaffold.dart';
+import 'main.dart'; // Import for getIt
 
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
@@ -13,7 +15,7 @@ class CheckInScreen extends StatefulWidget {
 }
 
 class _CheckInScreenState extends State<CheckInScreen> {
-  final CheckInService _checkInService = CheckInService();
+  final CheckInService _checkInService = getIt<CheckInService>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Form controllers

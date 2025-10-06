@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'ui/components/components.dart';
 import 'services/services.dart';
 import 'models/models.dart';
+import 'main.dart'; // Import for getIt
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -12,7 +14,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final ProfileService _profileService = ProfileService();
+  final ProfileService _profileService = getIt<ProfileService>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isLoading = false;

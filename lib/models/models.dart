@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Export all model classes
 export 'workout.dart';
 export 'checkin.dart';
+export 'badge.dart';
+export 'streak.dart';
 export '../services/fitness_data_service.dart' show FitnessData;
 
 /// Profile - User profile data model

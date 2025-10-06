@@ -3,13 +3,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../models/checkin.dart';
 import 'cache_service.dart';
+import 'stream_transformers.dart';
 
 /// Service for managing CheckIn data in Firestore
 /// CheckIns are stored under users/{userId}/checkins collection
 class CheckInService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final CacheService _cacheService = CacheService();
+  final CacheService _cacheService;
+
+  CheckInService(this._cacheService);
 
   // Get current user ID
   String? get currentUserId => _auth.currentUser?.uid;
@@ -41,17 +44,11 @@ class CheckInService {
 
           return checkIns;
         })
-        .handleError((error) async* {
-          print('Error loading check-ins from Firestore: $error');
-          // Return cached data on error (offline mode)
-          try {
-            final cachedCheckIns = await _cacheService.loadCheckIns();
-            yield cachedCheckIns..sort((a, b) => b.date.compareTo(a.date));
-          } catch (cacheError) {
-            print('Error loading cached check-ins: $cacheError');
-            yield [];
-          }
-        });
+        .transform(StreamTransformers.fallbackToCache<List<CheckIn>>(() async {
+          final cachedCheckIns = await _cacheService.loadCheckIns();
+          cachedCheckIns.sort((a, b) => b.date.compareTo(a.date));
+          return cachedCheckIns;
+        }));
   }
 
   /// Get the most recent check-in for current user
@@ -86,22 +83,15 @@ class CheckInService {
           debugPrint('HomeScreen: Retrieved last check-in - Weight: ${checkIn.weight}kg, Mood: ${checkIn.mood}, Date: ${checkIn.date.toLocal()}');
           return checkIn;
         })
-        .handleError((error) async* {
-          print('Error loading last check-in from Firestore: $error');
-          // Return most recent cached check-in
-          try {
-            final cachedCheckIns = await _cacheService.loadCheckIns();
-            if (cachedCheckIns.isNotEmpty) {
-              cachedCheckIns.sort((a, b) => b.date.compareTo(a.date));
-              yield cachedCheckIns.first;
-            } else {
-              yield null;
-            }
-          } catch (cacheError) {
-            print('Error loading cached last check-in: $cacheError');
-            yield null;
+        .transform(StreamTransformers.fallbackToCacheNullable<CheckIn>(() async {
+          final cachedCheckIns = await _cacheService.loadCheckIns();
+          if (cachedCheckIns.isNotEmpty) {
+            cachedCheckIns.sort((a, b) => b.date.compareTo(a.date));
+            return cachedCheckIns.first;
+          } else {
+            return null;
           }
-        });
+        }));
   }  /// Get check-ins for the last N days for trend analysis
   /// With offline support - returns cached data when offline
   Future<List<CheckIn>> getRecentCheckIns({int days = 30}) async {

@@ -140,7 +140,7 @@ class AnalyticsService {
     }
 
     // Calculate streak (consecutive days with workouts)
-    final streak = await _calculateStreak();
+    final streak = await calculateStreak();
 
     return WeeklyStats(
       totalWorkouts: totalWorkouts,
@@ -151,7 +151,7 @@ class AnalyticsService {
   }
 
   // Calculate current streak of consecutive active days
-  Future<int> _calculateStreak() async {
+  Future<int> calculateStreak() async {
     int streak = 0;
     DateTime checkDate = DateTime.now();
 

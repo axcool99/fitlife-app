@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'ui/components/components.dart';
 import 'services/analytics_service.dart';
 import 'services/checkin_service.dart';
+import 'services/gamification_service.dart';
+import 'services/cache_service.dart';
+import 'services/sync_service.dart';
 import 'models/checkin.dart';
+import 'models/badge.dart' as badge_model;
 import 'main_scaffold.dart';
-import 'main.dart'; // Import for ServiceLocator
+import 'main.dart'; // Import for getIt
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -17,8 +22,9 @@ class ProgressScreen extends StatefulWidget {
 }
 
 class _ProgressScreenState extends State<ProgressScreen> {
-  final AnalyticsService _analyticsService = AnalyticsService();
-  final CheckInService _checkInService = CheckInService();
+  final AnalyticsService _analyticsService = getIt<AnalyticsService>();
+  final CheckInService _checkInService = getIt<CheckInService>();
+  final GamificationService _gamificationService = getIt<GamificationService>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isOnline = true; // Track online status
@@ -32,7 +38,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   Future<void> _checkConnectivity() async {
     try {
       final wasOnline = _isOnline;
-      final isOnline = await ServiceLocator.cacheService.isOnline();
+      final isOnline = await getIt<CacheService>().isOnline();
 
       if (mounted) {
         setState(() {
@@ -55,9 +61,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   Future<void> _syncCachedData() async {
     try {
-      final hasPending = await ServiceLocator.syncService.hasPendingSync();
+      final hasPending = await getIt<SyncService>().hasPendingSync();
       if (hasPending) {
-        await ServiceLocator.syncService.syncAllData();
+        await getIt<SyncService>().syncAllData();
         // Refresh the UI after sync
         setState(() {});
       }
@@ -611,6 +617,189 @@ class _ProgressScreenState extends State<ProgressScreen> {
                               ),
                             ],
                           ],
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: FitLifeTheme.spacingXL),
+
+                  // Achievements & Badges Section
+                  FadeInAnimation(
+                    child: FutureBuilder<List<badge_model.Badge>>(
+                      future: _gamificationService.getEarnedBadges(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return AppCard(
+                            useCleanStyle: true,
+                            child: Padding(
+                              padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AppText(
+                                    'Achievements',
+                                    type: AppTextType.headingSmall,
+                                    color: FitLifeTheme.primaryText,
+                                    useCleanStyle: true,
+                                  ),
+                                  const SizedBox(height: FitLifeTheme.spacingL),
+                                  const Center(
+                                    child: CircularProgressIndicator(
+                                      color: FitLifeTheme.accentGreen,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          return AppCard(
+                            useCleanStyle: true,
+                            child: Padding(
+                              padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AppText(
+                                    'Achievements',
+                                    type: AppTextType.headingSmall,
+                                    color: FitLifeTheme.primaryText,
+                                    useCleanStyle: true,
+                                  ),
+                                  const SizedBox(height: FitLifeTheme.spacingM),
+                                  AppText(
+                                    'Unable to load achievements',
+                                    type: AppTextType.bodySmall,
+                                    color: FitLifeTheme.textSecondary,
+                                    useCleanStyle: true,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        final badges = snapshot.data!;
+                        if (badges.isEmpty) {
+                          return AppCard(
+                            useCleanStyle: true,
+                            child: Padding(
+                              padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  AppText(
+                                    'Achievements',
+                                    type: AppTextType.headingSmall,
+                                    color: FitLifeTheme.primaryText,
+                                    useCleanStyle: true,
+                                  ),
+                                  const SizedBox(height: FitLifeTheme.spacingM),
+                                  Center(
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          Icons.emoji_events_outlined,
+                                          size: 48,
+                                          color: FitLifeTheme.textSecondary,
+                                        ),
+                                        const SizedBox(height: FitLifeTheme.spacingM),
+                                        AppText(
+                                          'No achievements yet',
+                                          type: AppTextType.bodyMedium,
+                                          color: FitLifeTheme.textSecondary,
+                                          useCleanStyle: true,
+                                        ),
+                                        const SizedBox(height: FitLifeTheme.spacingS),
+                                        AppText(
+                                          'Complete workouts to earn badges!',
+                                          type: AppTextType.bodySmall,
+                                          color: FitLifeTheme.textSecondary,
+                                          useCleanStyle: true,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        // Group badges by category
+                        final badgesByCategory = <badge_model.BadgeCategory, List<badge_model.Badge>>{};
+                        for (final badge in badges) {
+                          badgesByCategory[badge.category] ??= [];
+                          badgesByCategory[badge.category]!.add(badge);
+                        }
+
+                        return AppCard(
+                          useCleanStyle: true,
+                          child: Padding(
+                            padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    AppText(
+                                      'Achievements',
+                                      type: AppTextType.headingSmall,
+                                      color: FitLifeTheme.primaryText,
+                                      useCleanStyle: true,
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: FitLifeTheme.spacingS,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: FitLifeTheme.accentGreen.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: AppText(
+                                        '${badges.length} earned',
+                                        type: AppTextType.bodySmall,
+                                        color: FitLifeTheme.accentGreen,
+                                        useCleanStyle: true,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: FitLifeTheme.spacingL),
+
+                                // Badges by category
+                                ...badgesByCategory.entries.map((entry) {
+                                  final category = entry.key;
+                                  final categoryBadges = entry.value;
+
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      AppText(
+                                        _getCategoryDisplayName(category),
+                                        type: AppTextType.bodyMedium,
+                                        color: FitLifeTheme.primaryText,
+                                        useCleanStyle: true,
+                                      ),
+                                      const SizedBox(height: FitLifeTheme.spacingM),
+                                      Wrap(
+                                        spacing: FitLifeTheme.spacingM,
+                                        runSpacing: FitLifeTheme.spacingM,
+                                        children: categoryBadges.map((badge) => _buildBadgeItem(badge)).toList(),
+                                      ),
+                                      if (category != badgesByCategory.keys.last)
+                                        const SizedBox(height: FitLifeTheme.spacingL),
+                                    ],
+                                  );
+                                }),
+                              ],
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -1200,5 +1389,81 @@ class _ProgressScreenState extends State<ProgressScreen> {
     }
 
     return {'minY': minY, 'maxY': maxY, 'interval': interval};
+  }
+
+  Widget _buildBadgeItem(badge_model.Badge badge) {
+    return Container(
+      width: 80,
+      padding: const EdgeInsets.all(FitLifeTheme.spacingS),
+      decoration: BoxDecoration(
+        color: Color(badge.colorValue).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Color(badge.colorValue).withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _getBadgeIcon(badge.icon),
+            color: Color(badge.colorValue),
+            size: 24,
+          ),
+          const SizedBox(height: FitLifeTheme.spacingXS),
+          AppText(
+            badge.title.length > 10
+                ? '${badge.title.substring(0, 8)}...'
+                : badge.title,
+            type: AppTextType.bodySmall,
+            color: Color(badge.colorValue),
+            useCleanStyle: true,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          AppText(
+            DateFormat('MMM dd').format(badge.earnedAt),
+            type: AppTextType.bodySmall,
+            color: FitLifeTheme.textSecondary,
+            useCleanStyle: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getCategoryDisplayName(badge_model.BadgeCategory category) {
+    switch (category) {
+      case badge_model.BadgeCategory.streak:
+        return 'Streak';
+      case badge_model.BadgeCategory.workouts:
+        return 'Workouts';
+      case badge_model.BadgeCategory.strength:
+        return 'Strength';
+      case badge_model.BadgeCategory.consistency:
+        return 'Consistency';
+      case badge_model.BadgeCategory.achievement:
+        return 'Achievement';
+    }
+  }
+
+  IconData _getBadgeIcon(String iconName) {
+    switch (iconName) {
+      case 'local_fire_department':
+        return Icons.local_fire_department;
+      case 'emoji_events':
+        return Icons.emoji_events;
+      case 'fitness_center':
+        return Icons.fitness_center;
+      case 'sports_handball':
+        return Icons.sports_handball;
+      case 'military_tech':
+        return Icons.military_tech;
+      case 'calendar_month':
+        return Icons.calendar_month;
+      default:
+        return Icons.emoji_events;
+    }
   }
 }

@@ -3,12 +3,15 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout.dart';
 import 'fitness_data_service.dart';
 import 'cache_service.dart';
+import 'stream_transformers.dart';
 
 class WorkoutService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FitnessDataService _fitnessDataService = FitnessDataService();
-  final CacheService _cacheService = CacheService();
+  final FitnessDataService _fitnessDataService;
+  final CacheService _cacheService;
+
+  WorkoutService(this._cacheService) : _fitnessDataService = FitnessDataService();
 
   // Get current user ID
   String? get currentUserId => _auth.currentUser?.uid;
@@ -38,17 +41,7 @@ class WorkoutService {
 
           return workouts;
         })
-        .handleError((error) async* {
-          print('Error loading workouts from Firestore: $error');
-          // Return cached data on error (offline mode)
-          try {
-            final cachedWorkouts = await _cacheService.loadWorkouts();
-            yield cachedWorkouts;
-          } catch (cacheError) {
-            print('Error loading cached workouts: $cacheError');
-            yield [];
-          }
-        });
+        .transform(StreamTransformers.fallbackToCache<List<Workout>>(() => _cacheService.loadWorkouts()));
   }
 
   // Add new workout (with offline support)
@@ -167,27 +160,20 @@ class WorkoutService {
 
           return todaysWorkouts;
         })
-        .handleError((error) async* {
-          print('Error loading today\'s workouts from Firestore: $error');
-          // Return cached workouts filtered for today
-          try {
-            final allCachedWorkouts = await _cacheService.loadWorkouts();
-            final today = DateTime.now();
-            final startOfDay = DateTime(today.year, today.month, today.day);
-            final endOfDay = startOfDay.add(const Duration(days: 1));
+        .transform(StreamTransformers.fallbackToCache<List<Workout>>(() async {
+          final allCachedWorkouts = await _cacheService.loadWorkouts();
+          final today = DateTime.now();
+          final startOfDay = DateTime(today.year, today.month, today.day);
+          final endOfDay = startOfDay.add(const Duration(days: 1));
 
-            final todaysCachedWorkouts = allCachedWorkouts
-                .where((workout) =>
-                    workout.createdAt.isAfter(startOfDay) &&
-                    workout.createdAt.isBefore(endOfDay))
-                .toList()
-                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          final todaysCachedWorkouts = allCachedWorkouts
+              .where((workout) =>
+                  workout.createdAt.isAfter(startOfDay) &&
+                  workout.createdAt.isBefore(endOfDay))
+              .toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-            yield todaysCachedWorkouts;
-          } catch (cacheError) {
-            print('Error loading cached today\'s workouts: $cacheError');
-            yield [];
-          }
-        });
+          return todaysCachedWorkouts;
+        }));
   }
 }
