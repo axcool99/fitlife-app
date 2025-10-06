@@ -834,6 +834,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
+                const SizedBox(height: FitLifeTheme.spacingL),
+
                 // Today's Summary Section Heading
                 FadeInAnimation(
                   child: AppText(
