@@ -20,6 +20,7 @@ import 'services/checkin_service.dart'; // Import checkin service
 import 'services/fitness_data_service.dart'; // Import fitness data service
 import 'services/profile_service.dart'; // Import profile service
 import 'services/analytics_service.dart'; // Import analytics service
+import 'services/user_preferences_service.dart'; // Import user preferences service
 import 'services/ai_service.dart'; // Import AI service
 import 'services/gamification_service.dart'; // Import gamification service
 
@@ -43,8 +44,9 @@ void main() async {
   getIt.registerSingleton<WorkoutService>(WorkoutService(getIt<CacheService>()));
   getIt.registerSingleton<CheckInService>(CheckInService(getIt<CacheService>()));
   getIt.registerSingleton<ProfileService>(ProfileService());
+  getIt.registerSingleton<UserPreferencesService>(UserPreferencesService(getIt<CacheService>()));
   getIt.registerSingleton<AnalyticsService>(AnalyticsService(getIt<CacheService>(), getIt<NetworkService>()));
-  getIt.registerSingleton<AIService>(AIService(getIt<AnalyticsService>(), getIt<ProfileService>()));
+  getIt.registerSingleton<AIService>(AIService(getIt<AnalyticsService>(), getIt<ProfileService>(), getIt<UserPreferencesService>()));
   getIt.registerSingleton<GamificationService>(GamificationService(getIt<AnalyticsService>()));
   getIt.registerSingleton<SyncService>(SyncService(
     getIt<CacheService>(),

@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/workout.dart';
 import '../models/checkin.dart';
+import '../models/models.dart';
 import 'network_service.dart';
 
 /// Cache service for offline data storage using Hive
@@ -346,6 +347,38 @@ class CacheService {
       'checkins': _checkinsBox.length,
       'analytics': _analyticsBox.length,
     };
+  }
+
+  /// Save user preferences to cache
+  Future<void> saveUserPreferences(UserPreferences preferences) async {
+    await _ensureInitialized();
+    try {
+      await _analyticsBox.put('user_preferences', preferences.toCache());
+      await _updateSyncStatus('preferences', DateTime.now());
+    } catch (e) {
+      throw Exception('Failed to save user preferences to cache: $e');
+    }
+  }
+
+  /// Load user preferences from cache
+  Future<UserPreferences?> loadUserPreferences() async {
+    await _ensureInitialized();
+    try {
+      final data = _analyticsBox.get('user_preferences');
+      if (data == null) return null;
+
+      // Convert cached data back to UserPreferences
+      // Handle the lastUpdated field which is stored as ISO string
+      final cacheData = Map<String, dynamic>.from(data);
+      if (cacheData['lastUpdated'] is String) {
+        cacheData['lastUpdated'] = DateTime.parse(cacheData['lastUpdated']);
+      }
+
+      return UserPreferences.fromFirestore(cacheData, 'cached');
+    } catch (e) {
+      print('Error loading cached user preferences: $e');
+      return null;
+    }
   }
 
   /// Ensure service is initialized

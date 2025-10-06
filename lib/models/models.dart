@@ -188,3 +188,233 @@ class Profile {
     return (bmr * activityMultiplier).round();
   }
 }
+
+/// User preferences for personalized workout recommendations
+class UserPreferences {
+  final String? id;
+  final String userId;
+
+  // Exercise preferences
+  final List<String> favoriteExercises;
+  final List<String> dislikedExercises;
+  final List<String> preferredCategories; // ['upper_body', 'cardio', 'core', etc.]
+
+  // Workout preferences
+  final int? preferredWorkoutDuration; // in minutes
+  final List<String> preferredWorkoutTimes; // ['morning', 'afternoon', 'evening']
+  final int weeklyWorkoutTarget; // target workouts per week
+
+  // Fitness goals
+  final List<String> fitnessGoals; // ['weight_loss', 'muscle_gain', 'endurance', 'strength', 'flexibility']
+
+  // Equipment and location
+  final List<String> availableEquipment; // ['dumbbells', 'barbell', 'resistance_bands', etc.]
+  final String workoutLocation; // 'home', 'gym', 'both'
+  final bool hasHomeEquipment;
+
+  // Advanced preferences
+  final String progressionStyle; // 'conservative', 'moderate', 'aggressive'
+  final bool prefersCompoundMovements;
+  final bool avoidsHighImpact;
+  final List<String> medicalConditions; // conditions to consider for safety
+
+  // Learning data (updated by AI)
+  final Map<String, double> exerciseCompletionRates; // exercise -> completion %
+  final Map<String, int> exerciseFrequency; // how often they do each exercise
+  final DateTime? lastUpdated;
+
+  const UserPreferences({
+    this.id,
+    required this.userId,
+    this.favoriteExercises = const [],
+    this.dislikedExercises = const [],
+    this.preferredCategories = const [],
+    this.preferredWorkoutDuration,
+    this.preferredWorkoutTimes = const [],
+    this.weeklyWorkoutTarget = 3,
+    this.fitnessGoals = const [],
+    this.availableEquipment = const [],
+    this.workoutLocation = 'both',
+    this.hasHomeEquipment = false,
+    this.progressionStyle = 'moderate',
+    this.prefersCompoundMovements = true,
+    this.avoidsHighImpact = false,
+    this.medicalConditions = const [],
+    this.exerciseCompletionRates = const {},
+    this.exerciseFrequency = const {},
+    this.lastUpdated,
+  });
+
+  // Default preferences for new users
+  static const List<String> defaultCategories = ['upper_body', 'lower_body', 'core'];
+  static const List<String> defaultGoals = ['strength', 'endurance'];
+  static const List<String> defaultEquipment = ['bodyweight'];
+
+  // Available options
+  static const List<String> availableCategories = [
+    'upper_body', 'lower_body', 'core', 'cardio', 'flexibility', 'sports'
+  ];
+
+  static const List<String> availableGoals = [
+    'weight_loss', 'muscle_gain', 'endurance', 'strength', 'flexibility', 'general_fitness'
+  ];
+
+  static const List<String> availableEquipmentOptions = [
+    'bodyweight', 'dumbbells', 'barbell', 'kettlebell', 'resistance_bands',
+    'pull_up_bar', 'bench', 'cable_machine', 'treadmill', 'bike', 'rower'
+  ];
+
+  static const List<String> workoutLocations = ['home', 'gym', 'both'];
+  static const List<String> progressionStyles = ['conservative', 'moderate', 'aggressive'];
+  static const List<String> workoutTimeOptions = ['morning', 'afternoon', 'evening'];
+
+  // Create from Firestore document
+  factory UserPreferences.fromFirestore(Map<String, dynamic> data, String docId) {
+    return UserPreferences(
+      id: docId,
+      userId: data['userId'] ?? '',
+      favoriteExercises: List<String>.from(data['favoriteExercises'] ?? []),
+      dislikedExercises: List<String>.from(data['dislikedExercises'] ?? []),
+      preferredCategories: List<String>.from(data['preferredCategories'] ?? defaultCategories),
+      preferredWorkoutDuration: data['preferredWorkoutDuration'] as int?,
+      preferredWorkoutTimes: List<String>.from(data['preferredWorkoutTimes'] ?? []),
+      weeklyWorkoutTarget: data['weeklyWorkoutTarget'] ?? 3,
+      fitnessGoals: List<String>.from(data['fitnessGoals'] ?? defaultGoals),
+      availableEquipment: List<String>.from(data['availableEquipment'] ?? defaultEquipment),
+      workoutLocation: data['workoutLocation'] ?? 'both',
+      hasHomeEquipment: data['hasHomeEquipment'] ?? false,
+      progressionStyle: data['progressionStyle'] ?? 'moderate',
+      prefersCompoundMovements: data['prefersCompoundMovements'] ?? true,
+      avoidsHighImpact: data['avoidsHighImpact'] ?? false,
+      medicalConditions: List<String>.from(data['medicalConditions'] ?? []),
+      exerciseCompletionRates: Map<String, double>.from(data['exerciseCompletionRates'] ?? {}),
+      exerciseFrequency: Map<String, int>.from(data['exerciseFrequency'] ?? {}),
+      lastUpdated: (data['lastUpdated'] as Timestamp?)?.toDate(),
+    );
+  }
+
+  // Convert to Firestore document
+  Map<String, dynamic> toFirestore() {
+    return {
+      'userId': userId,
+      'favoriteExercises': favoriteExercises,
+      'dislikedExercises': dislikedExercises,
+      'preferredCategories': preferredCategories,
+      'preferredWorkoutDuration': preferredWorkoutDuration,
+      'preferredWorkoutTimes': preferredWorkoutTimes,
+      'weeklyWorkoutTarget': weeklyWorkoutTarget,
+      'fitnessGoals': fitnessGoals,
+      'availableEquipment': availableEquipment,
+      'workoutLocation': workoutLocation,
+      'hasHomeEquipment': hasHomeEquipment,
+      'progressionStyle': progressionStyle,
+      'prefersCompoundMovements': prefersCompoundMovements,
+      'avoidsHighImpact': avoidsHighImpact,
+      'medicalConditions': medicalConditions,
+      'exerciseCompletionRates': exerciseCompletionRates,
+      'exerciseFrequency': exerciseFrequency,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    };
+  }
+
+  // Convert to cache-friendly map (without FieldValue)
+  Map<String, dynamic> toCache() {
+    return {
+      'userId': userId,
+      'favoriteExercises': favoriteExercises,
+      'dislikedExercises': dislikedExercises,
+      'preferredCategories': preferredCategories,
+      'preferredWorkoutDuration': preferredWorkoutDuration,
+      'preferredWorkoutTimes': preferredWorkoutTimes,
+      'weeklyWorkoutTarget': weeklyWorkoutTarget,
+      'fitnessGoals': fitnessGoals,
+      'availableEquipment': availableEquipment,
+      'workoutLocation': workoutLocation,
+      'hasHomeEquipment': hasHomeEquipment,
+      'progressionStyle': progressionStyle,
+      'prefersCompoundMovements': prefersCompoundMovements,
+      'avoidsHighImpact': avoidsHighImpact,
+      'medicalConditions': medicalConditions,
+      'exerciseCompletionRates': exerciseCompletionRates,
+      'exerciseFrequency': exerciseFrequency,
+      'lastUpdated': lastUpdated?.toIso8601String(),
+    };
+  }
+
+  // Create default preferences for new users
+  factory UserPreferences.createDefault(String userId) {
+    return UserPreferences(
+      userId: userId,
+      preferredCategories: defaultCategories,
+      fitnessGoals: defaultGoals,
+      availableEquipment: defaultEquipment,
+      weeklyWorkoutTarget: 3,
+    );
+  }
+
+  // Helper methods
+  bool hasGoal(String goal) => fitnessGoals.contains(goal);
+  bool hasCategory(String category) => preferredCategories.contains(category);
+  bool hasEquipment(String equipment) => availableEquipment.contains(equipment);
+  bool likesExercise(String exercise) => favoriteExercises.contains(exercise.toLowerCase());
+  bool dislikesExercise(String exercise) => dislikedExercises.contains(exercise.toLowerCase());
+
+  // Get completion rate for an exercise (default 0.5 if unknown)
+  double getCompletionRate(String exercise) => exerciseCompletionRates[exercise.toLowerCase()] ?? 0.5;
+
+  // Update completion rate (moving average)
+  UserPreferences updateCompletionRate(String exercise, bool completed) {
+    final currentRate = getCompletionRate(exercise);
+    final newRate = (currentRate * 0.8) + (completed ? 0.2 : 0.0); // 80% weight to history, 20% to current
+
+    final updatedRates = Map<String, double>.from(exerciseCompletionRates);
+    updatedRates[exercise.toLowerCase()] = newRate;
+
+    return copyWith(exerciseCompletionRates: updatedRates);
+  }
+
+  // Copy with method for immutability
+  UserPreferences copyWith({
+    String? id,
+    String? userId,
+    List<String>? favoriteExercises,
+    List<String>? dislikedExercises,
+    List<String>? preferredCategories,
+    int? preferredWorkoutDuration,
+    List<String>? preferredWorkoutTimes,
+    int? weeklyWorkoutTarget,
+    List<String>? fitnessGoals,
+    List<String>? availableEquipment,
+    String? workoutLocation,
+    bool? hasHomeEquipment,
+    String? progressionStyle,
+    bool? prefersCompoundMovements,
+    bool? avoidsHighImpact,
+    List<String>? medicalConditions,
+    Map<String, double>? exerciseCompletionRates,
+    Map<String, int>? exerciseFrequency,
+    DateTime? lastUpdated,
+  }) {
+    return UserPreferences(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      favoriteExercises: favoriteExercises ?? this.favoriteExercises,
+      dislikedExercises: dislikedExercises ?? this.dislikedExercises,
+      preferredCategories: preferredCategories ?? this.preferredCategories,
+      preferredWorkoutDuration: preferredWorkoutDuration ?? this.preferredWorkoutDuration,
+      preferredWorkoutTimes: preferredWorkoutTimes ?? this.preferredWorkoutTimes,
+      weeklyWorkoutTarget: weeklyWorkoutTarget ?? this.weeklyWorkoutTarget,
+      fitnessGoals: fitnessGoals ?? this.fitnessGoals,
+      availableEquipment: availableEquipment ?? this.availableEquipment,
+      workoutLocation: workoutLocation ?? this.workoutLocation,
+      hasHomeEquipment: hasHomeEquipment ?? this.hasHomeEquipment,
+      progressionStyle: progressionStyle ?? this.progressionStyle,
+      prefersCompoundMovements: prefersCompoundMovements ?? this.prefersCompoundMovements,
+      avoidsHighImpact: avoidsHighImpact ?? this.avoidsHighImpact,
+      medicalConditions: medicalConditions ?? this.medicalConditions,
+      exerciseCompletionRates: exerciseCompletionRates ?? this.exerciseCompletionRates,
+      exerciseFrequency: exerciseFrequency ?? this.exerciseFrequency,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
+    );
+  }
+}
