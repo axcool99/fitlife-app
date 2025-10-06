@@ -98,6 +98,9 @@ class AnalyticsService {
           calories += workout.weight! * 0.5; // Rough multiplier
         }
 
+        // Ensure calories are never negative
+        calories = calories > 0 ? calories : 0.0;
+
         dailyCalories[workoutDate] = dailyCalories[workoutDate]! + calories;
       }
     }

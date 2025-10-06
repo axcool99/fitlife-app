@@ -311,7 +311,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       }
 
                       final data = snapshot.data!;
-                      final spots = data.entries.map((entry) {
+                      final spots = data.entries
+                          .where((entry) => entry.value >= 0) // Filter out negative calories
+                          .map((entry) {
                         final daysAgo = DateTime.now().difference(entry.key).inDays;
                         return FlSpot((6 - daysAgo).toDouble(), entry.value);
                       }).toList();
@@ -348,6 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 height: 200,
                                 child: LineChart(
                                   LineChartData(
+                                    minY: 0, // Ensure Y-axis starts at 0 to prevent below-graph drawing
                                     gridData: FlGridData(
                                       show: true,
                                       drawVerticalLine: false,
