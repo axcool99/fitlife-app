@@ -40,7 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _checkConnectivity();
     _setupConnectivityListener();
-    _initializeFutures();
   }
 
   void _initializeFutures() {
@@ -146,6 +145,11 @@ class _HomeScreenState extends State<HomeScreen> {
             return const LoadingState(message: 'Setting up your fitness data...');
           }
 
+          // Initialize futures only after fitness data is ready
+          if (_workoutSuggestionsFuture == null) {
+            _initializeFutures();
+          }
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(FitLifeTheme.spacingL),
             child: Column(
@@ -237,9 +241,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // AI Workout Suggestions
                 FadeInAnimation(
-                  child: FutureBuilder<List<WorkoutSuggestion>>(
-                    future: _workoutSuggestionsFuture,
-                    builder: (context, snapshot) {
+                  child: _workoutSuggestionsFuture != null
+                      ? FutureBuilder<List<WorkoutSuggestion>>(
+                          future: _workoutSuggestionsFuture,
+                          builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return AppCard(
                           useCleanStyle: true,
@@ -367,7 +372,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     },
-                  ),
+                  )
+                      : const SizedBox.shrink(), // Don't show anything until futures are initialized
                 ),
 
                 const SizedBox(height: FitLifeTheme.spacingXL),
@@ -375,9 +381,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Gamification Card - Streaks and Badges
                 // Your Progress Section
                 FadeInAnimation(
-                  child: FutureBuilder<GamificationSummary>(
-                    future: _gamificationSummaryFuture,
-                    builder: (context, snapshot) {
+                  child: _gamificationSummaryFuture != null
+                      ? FutureBuilder<GamificationSummary>(
+                          future: _gamificationSummaryFuture,
+                          builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return AppCard(
                           useCleanStyle: true,
@@ -601,7 +608,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     },
-                  ),
+                  )
+                      : const SizedBox.shrink(), // Don't show anything until futures are initialized
                 ),
 
                 const SizedBox(height: FitLifeTheme.spacingXL),
@@ -826,9 +834,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Daily Calories Burned Chart
                 FadeInAnimation(
-                  child: FutureBuilder<Map<DateTime, double>>(
-                    future: _caloriesDataFuture,
-                    builder: (context, snapshot) {
+                  child: _caloriesDataFuture != null
+                      ? FutureBuilder<Map<DateTime, double>>(
+                          future: _caloriesDataFuture,
+                          builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return _buildChartPlaceholder('Loading calories data...');
                       }
@@ -1011,10 +1020,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       );
                     },
-                  ),
+                  )
+                      : const SizedBox.shrink(), // Don't show anything until futures are initialized
                 ),
-
-                const SizedBox(height: FitLifeTheme.spacingXL),
 
                 // Today's Summary Section Heading
                 FadeInAnimation(
