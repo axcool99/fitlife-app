@@ -312,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       final data = snapshot.data!;
                       final spots = data.entries
-                          .where((entry) => entry.value >= 0) // Filter out negative calories
+                          .where((entry) => entry.value > 0) // Filter out zero and negative calories
                           .map((entry) {
                         final daysAgo = DateTime.now().difference(entry.key).inDays;
                         return FlSpot((6 - daysAgo).toDouble(), entry.value);
@@ -411,6 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     ),
                                     borderData: FlBorderData(show: false),
+                                    clipData: FlClipData.all(), // Prevent line from drawing below chart area
                                     lineBarsData: [
                                       LineChartBarData(
                                         spots: spots,
