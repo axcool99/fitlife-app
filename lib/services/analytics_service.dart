@@ -270,6 +270,175 @@ class AnalyticsService {
 
     return streak;
   }
+
+  // Get workout type distribution for the past 7 days
+  Future<Map<String, int>> getWorkoutTypeDistribution() async {
+    try {
+      final workouts = await getLast7DaysWorkouts();
+      final Map<String, int> distribution = {};
+
+      for (final workout in workouts) {
+        final type = workout.exerciseName;
+        distribution[type] = (distribution[type] ?? 0) + 1;
+      }
+
+      // Cache the fresh data
+      await _cacheService.saveWorkoutTypeDistribution(distribution);
+
+      return distribution;
+    } catch (e) {
+      print('Error fetching workout type distribution from Firestore: $e');
+      // Fall back to cached data
+      try {
+        final cachedData = await _cacheService.loadWorkoutTypeDistribution();
+        if (cachedData != null) {
+          return cachedData;
+        }
+      } catch (cacheError) {
+        print('Error loading cached workout type distribution: $cacheError');
+      }
+
+      return {};
+    }
+  }
+
+  // Get average session duration for the past 7 days
+  Future<Map<DateTime, double>> getAverageSessionDuration() async {
+    try {
+      final workouts = await getLast7DaysWorkouts();
+      final Map<DateTime, Map<String, dynamic>> dailyData = {};
+
+      // Initialize all 7 days
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime.now().subtract(Duration(days: i));
+        final dateKey = DateTime(date.year, date.month, date.day);
+        dailyData[dateKey] = {'totalDuration': 0.0, 'count': 0};
+      }
+
+      // Aggregate data by day
+      for (final workout in workouts) {
+        final workoutDate = DateTime(
+          workout.createdAt.year,
+          workout.createdAt.month,
+          workout.createdAt.day,
+        );
+
+        if (dailyData.containsKey(workoutDate) && workout.duration != null) {
+          dailyData[workoutDate]!['totalDuration'] += workout.duration! / 60.0; // Convert to minutes
+          dailyData[workoutDate]!['count'] += 1;
+        }
+      }
+
+      // Calculate averages
+      final Map<DateTime, double> averages = {};
+      dailyData.forEach((date, data) {
+        final count = data['count'] as int;
+        final totalDuration = data['totalDuration'] as double;
+        averages[date] = count > 0 ? totalDuration / count : 0.0;
+      });
+
+      // Cache the fresh data
+      final cacheData = averages.map((key, value) => MapEntry(key.toIso8601String(), value));
+      await _cacheService.saveAverageSessionDuration(cacheData);
+
+      return averages;
+    } catch (e) {
+      print('Error fetching average session duration from Firestore: $e');
+      // Fall back to cached data
+      try {
+        final cachedData = await _cacheService.loadAverageSessionDuration();
+        if (cachedData != null) {
+          return cachedData.map((key, value) => MapEntry(DateTime.parse(key), value as double));
+        }
+      } catch (cacheError) {
+        print('Error loading cached average session duration: $cacheError');
+      }
+
+      // Return empty data
+      final Map<DateTime, double> emptyData = {};
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime.now().subtract(Duration(days: i));
+        final dateKey = DateTime(date.year, date.month, date.day);
+        emptyData[dateKey] = 0.0;
+      }
+      return emptyData;
+    }
+  }
+
+  // Get calorie burn efficiency (calories per minute) for the past 7 days
+  Future<Map<DateTime, double>> getCalorieBurnEfficiency() async {
+    try {
+      final workouts = await getLast7DaysWorkouts();
+      final Map<DateTime, Map<String, dynamic>> dailyData = {};
+
+      // Initialize all 7 days
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime.now().subtract(Duration(days: i));
+        final dateKey = DateTime(date.year, date.month, date.day);
+        dailyData[dateKey] = {'totalCalories': 0.0, 'totalDuration': 0.0};
+      }
+
+      // Aggregate data by day
+      for (final workout in workouts) {
+        final workoutDate = DateTime(
+          workout.createdAt.year,
+          workout.createdAt.month,
+          workout.createdAt.day,
+        );
+
+        if (dailyData.containsKey(workoutDate)) {
+          // Calculate calories for this workout
+          double calories = 50.0; // Base calories
+          if (workout.duration != null) {
+            calories += (workout.duration! / 60.0) * 100; // Duration-based calories
+          }
+          if (workout.weight != null && workout.weight! > 0) {
+            calories += workout.weight! * 0.5; // Weight-based calories
+          }
+          calories = calories > 0 ? calories : 0.0;
+
+          dailyData[workoutDate]!['totalCalories'] += calories;
+          if (workout.duration != null) {
+            dailyData[workoutDate]!['totalDuration'] += workout.duration! / 60.0; // Convert to minutes
+          }
+        }
+      }
+
+      // Calculate efficiency (calories per minute)
+      final Map<DateTime, double> efficiency = {};
+      dailyData.forEach((date, data) {
+        final totalCalories = data['totalCalories'] as double;
+        final totalDuration = data['totalDuration'] as double;
+        efficiency[date] = totalDuration > 0 ? totalCalories / totalDuration : 0.0;
+      });
+
+      // Cache the fresh data
+      final cacheData = efficiency.map((key, value) => MapEntry(key.toIso8601String(), value));
+      await _cacheService.saveCalorieBurnEfficiency(cacheData);
+
+      return efficiency;
+    } catch (e) {
+      print('Error fetching calorie burn efficiency from Firestore: $e');
+      // Fall back to cached data
+      try {
+        final cachedData = await _cacheService.loadCalorieBurnEfficiency();
+        if (cachedData != null) {
+          return cachedData.map((key, value) => MapEntry(DateTime.parse(key), value as double));
+        }
+      } catch (cacheError) {
+        print('Error loading cached calorie burn efficiency: $cacheError');
+      }
+
+      // Return empty data
+      final Map<DateTime, double> emptyData = {};
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime.now().subtract(Duration(days: i));
+        final dateKey = DateTime(date.year, date.month, date.day);
+        emptyData[dateKey] = 0.0;
+      }
+      return emptyData;
+    }
+  }
 }
 
 class WeeklyStats {

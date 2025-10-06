@@ -7,6 +7,8 @@ import 'services/sync_service.dart';
 import 'services/network_service.dart';
 import 'main.dart';
 
+enum TimeRange { week, month, threeMonths }
+
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
 
@@ -20,6 +22,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
   final SyncService _syncService = getIt<SyncService>();
 
   bool _isOnline = true;
+  TimeRange _selectedTimeRange = TimeRange.week;
 
   @override
   void initState() {
@@ -67,6 +70,38 @@ class _ProgressScreenState extends State<ProgressScreen> {
     } catch (e) {
       print('Error syncing cached data: $e');
     }
+  }
+
+  Widget _buildStatsPlaceholder() {
+    return AppCard(
+      useCleanStyle: true,
+      child: Padding(
+        padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+        child: Center(
+          child: AppText(
+            'Loading weekly stats...',
+            type: AppTextType.bodyMedium,
+            color: FitLifeTheme.textSecondary,
+            useCleanStyle: true,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyStatsState() {
+    return AppCard(
+      useCleanStyle: true,
+      child: Padding(
+        padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+        child: EmptyState(
+          title: 'Start Your Fitness Journey',
+          message: 'Complete your first workout to see your progress and statistics here!',
+          icon: Icons.rocket_launch,
+          animate: true,
+        ),
+      ),
+    );
   }
 
   @override
@@ -141,9 +176,15 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     color: FitLifeTheme.textPrimary,
                   ),
                   const SizedBox(height: FitLifeTheme.spacingM),
+                  _buildTimeRangeSelector(),
+                  const SizedBox(height: FitLifeTheme.spacingL),
                   _buildCaloriesChart(),
                   const SizedBox(height: FitLifeTheme.spacingL),
                   _buildWorkoutFrequencyChart(),
+                  const SizedBox(height: FitLifeTheme.spacingL),
+                  _buildWorkoutTypeDistributionChart(),
+                  const SizedBox(height: FitLifeTheme.spacingL),
+                  _buildCombinedMetricsChart(),
                 ],
               ),
             ),
@@ -246,17 +287,49 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
-  Widget _buildStatsPlaceholder() {
-    return AppCard(
-      useCleanStyle: true,
-      child: Padding(
-        padding: const EdgeInsets.all(FitLifeTheme.spacingL),
-        child: Center(
-          child: AppText(
-            'Loading weekly stats...',
-            type: AppTextType.bodyMedium,
-            color: FitLifeTheme.textSecondary,
-            useCleanStyle: true,
+  Widget _buildTimeRangeSelector() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: FitLifeTheme.spacingM, vertical: FitLifeTheme.spacingS),
+      decoration: BoxDecoration(
+        color: FitLifeTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(FitLifeTheme.radiusM),
+        border: Border.all(color: FitLifeTheme.borderColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildTimeRangeButton('Week', TimeRange.week),
+          const SizedBox(width: FitLifeTheme.spacingS),
+          _buildTimeRangeButton('Month', TimeRange.month),
+          const SizedBox(width: FitLifeTheme.spacingS),
+          _buildTimeRangeButton('3 Months', TimeRange.threeMonths),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeRangeButton(String label, TimeRange range) {
+    final isSelected = _selectedTimeRange == range;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedTimeRange = range),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: FitLifeTheme.spacingS),
+          decoration: BoxDecoration(
+            color: isSelected ? FitLifeTheme.accentGreen.withOpacity(0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(FitLifeTheme.radiusS),
+            border: Border.all(
+              color: isSelected ? FitLifeTheme.accentGreen : FitLifeTheme.borderColor.withOpacity(0.3),
+              width: isSelected ? 2 : 1,
+            ),
+          ),
+          child: Center(
+            child: AppText(
+              label,
+              type: AppTextType.bodySmall,
+              color: isSelected ? FitLifeTheme.accentGreen : FitLifeTheme.textSecondary,
+              useCleanStyle: true,
+            ),
           ),
         ),
       ),
@@ -414,6 +487,403 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
+  Widget _buildWorkoutTypeDistributionChart() {
+    return FutureBuilder<Map<String, int>>(
+      future: _analyticsService.getWorkoutTypeDistribution(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildChartPlaceholder('Loading workout types...');
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+          return _buildChartPlaceholder('Unable to load workout types');
+        }
+
+        final hasData = snapshot.data!.values.any((value) => value > 0);
+
+        if (!hasData) {
+          return _buildEmptyChartState(
+            'No Workout Data Yet',
+            'Complete workouts with different exercises to see your workout type distribution!',
+            Icons.pie_chart,
+          );
+        }
+
+        return AppCard(
+          useCleanStyle: true,
+          child: Padding(
+            padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.pie_chart,
+                      color: FitLifeTheme.accentPurple,
+                      size: 24,
+                    ),
+                    const SizedBox(width: FitLifeTheme.spacingS),
+                    AppText(
+                      'Workout Types',
+                      type: AppTextType.bodyLarge,
+                      color: FitLifeTheme.primaryText,
+                      useCleanStyle: true,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: FitLifeTheme.spacingM),
+                SizedBox(
+                  height: 250,
+                  child: PieChart(
+                    PieChartData(
+                      sections: _buildPieChartSections(snapshot.data!),
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 40,
+                      pieTouchData: PieTouchData(
+                        enabled: true,
+                        touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                          // Handle touch events if needed
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: FitLifeTheme.spacingM),
+                _buildWorkoutTypeLegend(snapshot.data!),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<PieChartSectionData> _buildPieChartSections(Map<String, int> data) {
+    final total = data.values.fold(0, (sum, value) => sum + value);
+    final colors = [
+      FitLifeTheme.accentGreen,
+      FitLifeTheme.accentBlue,
+      FitLifeTheme.accentOrange,
+      FitLifeTheme.accentPurple,
+      FitLifeTheme.highlightPink,
+    ];
+
+    return data.entries.map((entry) {
+      final percentage = (entry.value / total) * 100;
+      final colorIndex = data.keys.toList().indexOf(entry.key) % colors.length;
+
+      return PieChartSectionData(
+        value: entry.value.toDouble(),
+        title: '${percentage.toStringAsFixed(1)}%',
+        color: colors[colorIndex],
+        radius: 60,
+        titleStyle: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: FitLifeTheme.textPrimary,
+        ),
+      );
+    }).toList();
+  }
+
+  Widget _buildWorkoutTypeLegend(Map<String, int> data) {
+    final colors = [
+      FitLifeTheme.accentGreen,
+      FitLifeTheme.accentBlue,
+      FitLifeTheme.accentOrange,
+      FitLifeTheme.accentPurple,
+      FitLifeTheme.highlightPink,
+    ];
+
+    return Wrap(
+      spacing: FitLifeTheme.spacingM,
+      runSpacing: FitLifeTheme.spacingS,
+      children: data.entries.map((entry) {
+        final colorIndex = data.keys.toList().indexOf(entry.key) % colors.length;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 12,
+              height: 12,
+              decoration: BoxDecoration(
+                color: colors[colorIndex],
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: FitLifeTheme.spacingXS),
+            AppText(
+              '${entry.key}: ${entry.value}',
+              type: AppTextType.bodySmall,
+              color: FitLifeTheme.textSecondary,
+              useCleanStyle: true,
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildCombinedMetricsChart() {
+    return FutureBuilder<List<Map<DateTime, double>>>(
+      future: Future.wait([
+        _analyticsService.getDailyWorkoutFrequency().then((data) => data.map((key, value) => MapEntry(key, value.toDouble()))),
+        _analyticsService.getAverageSessionDuration(),
+        _analyticsService.getCalorieBurnEfficiency(),
+      ]),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildChartPlaceholder('Loading combined metrics...');
+        }
+
+        if (snapshot.hasError || !snapshot.hasData) {
+          return _buildChartPlaceholder('Unable to load combined metrics');
+        }
+
+        final workoutFrequency = snapshot.data![0];
+        final sessionDuration = snapshot.data![1];
+        final calorieEfficiency = snapshot.data![2];
+
+        final hasData = workoutFrequency.values.any((v) => v > 0) ||
+                       sessionDuration.values.any((v) => v > 0) ||
+                       calorieEfficiency.values.any((v) => v > 0);
+
+        if (!hasData) {
+          return _buildEmptyChartState(
+            'No Metrics Data Yet',
+            'Complete more workouts to see your combined performance metrics!',
+            Icons.show_chart,
+          );
+        }
+
+        return AppCard(
+          useCleanStyle: true,
+          child: Padding(
+            padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.show_chart,
+                      color: FitLifeTheme.accentOrange,
+                      size: 24,
+                    ),
+                    const SizedBox(width: FitLifeTheme.spacingS),
+                    AppText(
+                      'Combined Metrics',
+                      type: AppTextType.bodyLarge,
+                      color: FitLifeTheme.primaryText,
+                      useCleanStyle: true,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: FitLifeTheme.spacingM),
+                SizedBox(
+                  height: 250,
+                  child: LineChart(
+                    LineChartData(
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: 10,
+                        getDrawingHorizontalLine: (value) {
+                          return FlLine(
+                            color: FitLifeTheme.dividerColor,
+                            strokeWidth: 1,
+                          );
+                        },
+                      ),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 30,
+                            getTitlesWidget: (value, meta) {
+                              final dayIndex = value.toInt();
+                              if (dayIndex >= 0 && dayIndex < 7) {
+                                const weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 8.0),
+                                  child: Text(
+                                    weekdays[dayIndex],
+                                    style: TextStyle(
+                                      color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                );
+                              }
+                              return const Text('');
+                            },
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            interval: 20,
+                            reservedSize: 40,
+                            getTitlesWidget: (value, meta) {
+                              return Text(
+                                value.toInt().toString(),
+                                style: TextStyle(
+                                  color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                  fontSize: 12,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      lineBarsData: [
+                        _buildLineChartBarData(workoutFrequency, FitLifeTheme.accentGreen, 'Workouts'),
+                        _buildLineChartBarData(sessionDuration, FitLifeTheme.accentBlue, 'Duration (min)'),
+                        _buildLineChartBarData(calorieEfficiency, FitLifeTheme.accentOrange, 'Cal/min'),
+                      ],
+                      lineTouchData: LineTouchData(
+                        enabled: true,
+                        touchTooltipData: LineTouchTooltipData(
+                          tooltipBgColor: FitLifeTheme.surfaceColor,
+                          tooltipPadding: const EdgeInsets.all(8),
+                          tooltipMargin: 8,
+                          getTooltipItems: (touchedSpots) {
+                            return touchedSpots.map((spot) {
+                              final data = spot.bar.spots;
+                              final dayIndex = spot.x.toInt();
+                              final value = spot.y;
+
+                              String label;
+                              if (spot.barIndex == 0) {
+                                label = '${value.toInt()} workouts';
+                              } else if (spot.barIndex == 1) {
+                                label = '${value.toStringAsFixed(1)} min avg';
+                              } else {
+                                label = '${value.toStringAsFixed(1)} cal/min';
+                              }
+
+                              return LineTooltipItem(
+                                label,
+                                TextStyle(
+                                  color: spot.bar.color,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              );
+                            }).toList();
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: FitLifeTheme.spacingM),
+                _buildCombinedMetricsLegend(),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  LineChartBarData _buildLineChartBarData(Map<DateTime, double> data, Color color, String label) {
+    final spots = data.entries.map((entry) {
+      final daysAgo = DateTime.now().difference(entry.key).inDays;
+      final dayIndex = (6 - daysAgo).clamp(0, 6);
+      return FlSpot(dayIndex.toDouble(), entry.value);
+    }).toList();
+
+    return LineChartBarData(
+      spots: spots,
+      isCurved: true,
+      color: color,
+      barWidth: 3,
+      isStrokeCapRound: true,
+      dotData: FlDotData(
+        show: true,
+        getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+          radius: 4,
+          color: color,
+          strokeWidth: 2,
+          strokeColor: FitLifeTheme.background,
+        ),
+      ),
+      belowBarData: BarAreaData(
+        show: true,
+        color: color.withOpacity(0.1),
+      ),
+    );
+  }
+
+  Widget _buildCombinedMetricsLegend() {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: FitLifeTheme.spacingL,
+      runSpacing: FitLifeTheme.spacingS,
+      children: [
+        _buildLegendItem(FitLifeTheme.accentGreen, 'Workouts'),
+        _buildLegendItem(FitLifeTheme.accentBlue, 'Avg Duration'),
+        _buildLegendItem(FitLifeTheme.accentOrange, 'Calorie Efficiency'),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(Color color, String label) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 3,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: FitLifeTheme.spacingXS),
+        AppText(
+          label,
+          type: AppTextType.bodySmall,
+          color: FitLifeTheme.textSecondary,
+          useCleanStyle: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChartPlaceholder(String message) {
+    return AppCard(
+      useCleanStyle: true,
+      child: Padding(
+        padding: const EdgeInsets.all(FitLifeTheme.spacingL),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.show_chart,
+                color: FitLifeTheme.textSecondary.withOpacity(0.5),
+                size: 48,
+              ),
+              const SizedBox(height: FitLifeTheme.spacingM),
+              AppText(
+                message,
+                type: AppTextType.bodyMedium,
+                color: FitLifeTheme.textSecondary,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildWorkoutFrequencyChart() {
     return FutureBuilder<Map<DateTime, int>>(
       future: _analyticsService.getDailyWorkoutFrequency(),
@@ -452,7 +922,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     ),
                     const SizedBox(width: FitLifeTheme.spacingS),
                     AppText(
-                      'Daily Workout Frequency',
+                      'Workout Frequency',
                       type: AppTextType.bodyLarge,
                       color: FitLifeTheme.primaryText,
                       useCleanStyle: true,
@@ -566,23 +1036,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
-  Widget _buildChartPlaceholder(String message) {
-    return AppCard(
-      useCleanStyle: true,
-      child: Padding(
-        padding: const EdgeInsets.all(FitLifeTheme.spacingL),
-        child: Center(
-          child: AppText(
-            message,
-            type: AppTextType.bodyMedium,
-            color: FitLifeTheme.textSecondary,
-            useCleanStyle: true,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildEmptyChartState(String title, String message, IconData icon) {
     return AppCard(
       useCleanStyle: true,
@@ -593,21 +1046,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
           message: message,
           icon: icon,
           animate: false,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyStatsState() {
-    return AppCard(
-      useCleanStyle: true,
-      child: Padding(
-        padding: const EdgeInsets.all(FitLifeTheme.spacingL),
-        child: EmptyState(
-          title: 'Start Your Fitness Journey',
-          message: 'Complete your first workout to see your progress and statistics here!',
-          icon: Icons.rocket_launch,
-          animate: true,
         ),
       ),
     );

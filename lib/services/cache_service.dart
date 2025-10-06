@@ -241,9 +241,101 @@ class CacheService {
   Future<Map<String, dynamic>?> loadWorkoutFrequency() async {
     await _ensureInitialized();
     try {
-      return _analyticsBox.get('workout_frequency') as Map<String, dynamic>?;
+      final data = _analyticsBox.get('workout_frequency');
+      if (data == null) return null;
+
+      // Handle the case where Hive returns Map<dynamic, dynamic>
+      if (data is Map) {
+        return data.map((key, value) => MapEntry(key.toString(), value));
+      }
+
+      return data as Map<String, dynamic>?;
     } catch (e) {
       throw Exception('Failed to load workout frequency from cache: $e');
+    }
+  }
+
+  /// Save workout type distribution data to cache
+  Future<void> saveWorkoutTypeDistribution(Map<String, int> distribution) async {
+    await _ensureInitialized();
+    try {
+      await _analyticsBox.put('workout_type_distribution', distribution);
+    } catch (e) {
+      throw Exception('Failed to save workout type distribution to cache: $e');
+    }
+  }
+
+  /// Load workout type distribution data from cache
+  Future<Map<String, int>?> loadWorkoutTypeDistribution() async {
+    await _ensureInitialized();
+    try {
+      final data = _analyticsBox.get('workout_type_distribution');
+      if (data == null) return null;
+
+      // Handle the case where Hive returns Map<dynamic, dynamic>
+      if (data is Map) {
+        return data.map((key, value) => MapEntry(key.toString(), value as int));
+      }
+
+      return data as Map<String, int>?;
+    } catch (e) {
+      throw Exception('Failed to load workout type distribution from cache: $e');
+    }
+  }
+
+  /// Save average session duration data to cache
+  Future<void> saveAverageSessionDuration(Map<String, dynamic> durationData) async {
+    await _ensureInitialized();
+    try {
+      await _analyticsBox.put('average_session_duration', durationData);
+    } catch (e) {
+      throw Exception('Failed to save average session duration to cache: $e');
+    }
+  }
+
+  /// Load average session duration data from cache
+  Future<Map<String, dynamic>?> loadAverageSessionDuration() async {
+    await _ensureInitialized();
+    try {
+      final data = _analyticsBox.get('average_session_duration');
+      if (data == null) return null;
+
+      // Handle the case where Hive returns Map<dynamic, dynamic>
+      if (data is Map) {
+        return data.map((key, value) => MapEntry(key.toString(), value));
+      }
+
+      return data as Map<String, dynamic>?;
+    } catch (e) {
+      throw Exception('Failed to load average session duration from cache: $e');
+    }
+  }
+
+  /// Save calorie burn efficiency data to cache
+  Future<void> saveCalorieBurnEfficiency(Map<String, dynamic> efficiencyData) async {
+    await _ensureInitialized();
+    try {
+      await _analyticsBox.put('calorie_burn_efficiency', efficiencyData);
+    } catch (e) {
+      throw Exception('Failed to save calorie burn efficiency to cache: $e');
+    }
+  }
+
+  /// Load calorie burn efficiency data from cache
+  Future<Map<String, dynamic>?> loadCalorieBurnEfficiency() async {
+    await _ensureInitialized();
+    try {
+      final data = _analyticsBox.get('calorie_burn_efficiency');
+      if (data == null) return null;
+
+      // Handle the case where Hive returns Map<dynamic, dynamic>
+      if (data is Map) {
+        return data.map((key, value) => MapEntry(key.toString(), value));
+      }
+
+      return data as Map<String, dynamic>?;
+    } catch (e) {
+      throw Exception('Failed to load calorie burn efficiency from cache: $e');
     }
   }
 

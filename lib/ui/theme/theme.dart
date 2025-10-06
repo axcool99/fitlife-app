@@ -248,6 +248,7 @@ class FitLifeTheme {
   static const double inputBorderRadius = 12.0;
   static const double buttonBorderRadius = 12.0;
   static const double radiusM = 12.0; // Medium border radius for consistency
+  static const double radiusS = 8.0; // Small border radius for consistency
 
   // ===== LEGACY COMPATIBILITY =====
   static const double legacyButtonBorderRadius = buttonBorderRadius;

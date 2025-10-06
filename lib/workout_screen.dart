@@ -258,12 +258,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           }
 
           final workouts = snapshot.data ?? [];
-          
-          // Debug print to verify Firestore documents retrieved
-          debugPrint('WorkoutScreen: Retrieved ${workouts.length} workouts from Firestore');
-          for (var workout in workouts) {
-            debugPrint('Workout: ${workout.exerciseName} - Date: ${workout.createdAt.toLocal()}');
-          }
 
           // Group workouts by date for better organization
           final groupedWorkouts = _groupWorkoutsByDate(workouts);
