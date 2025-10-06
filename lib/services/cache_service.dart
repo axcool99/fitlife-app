@@ -13,10 +13,12 @@ class CacheService {
   static const String _workoutsBoxName = 'workouts';
   static const String _checkinsBoxName = 'checkins';
   static const String _syncStatusBoxName = 'sync_status';
+  static const String _analyticsBoxName = 'analytics';
 
   late Box<Workout> _workoutsBox;
   late Box<CheckIn> _checkinsBox;
   late Box _syncStatusBox;
+  late Box _analyticsBox;
 
   bool _isInitialized = false;
 
@@ -40,6 +42,7 @@ class CacheService {
       _workoutsBox = await Hive.openBox<Workout>(_workoutsBoxName);
       _checkinsBox = await Hive.openBox<CheckIn>(_checkinsBoxName);
       _syncStatusBox = await Hive.openBox(_syncStatusBoxName);
+      _analyticsBox = await Hive.openBox(_analyticsBoxName);
 
       _isInitialized = true;
     } catch (e) {
@@ -179,11 +182,77 @@ class CacheService {
     }
   }
 
+  // ===== ANALYTICS CACHE =====
+
+  /// Save weekly stats to cache
+  Future<void> saveWeeklyStats(Map<String, dynamic> stats) async {
+    await _ensureInitialized();
+    try {
+      await _analyticsBox.put('weekly_stats', stats);
+      await _updateSyncStatus('analytics', DateTime.now());
+    } catch (e) {
+      throw Exception('Failed to save weekly stats to cache: $e');
+    }
+  }
+
+  /// Load weekly stats from cache
+  Future<Map<String, dynamic>?> loadWeeklyStats() async {
+    await _ensureInitialized();
+    try {
+      return _analyticsBox.get('weekly_stats') as Map<String, dynamic>?;
+    } catch (e) {
+      throw Exception('Failed to load weekly stats from cache: $e');
+    }
+  }
+
+  /// Save daily calories data to cache
+  Future<void> saveDailyCalories(Map<String, dynamic> caloriesData) async {
+    await _ensureInitialized();
+    try {
+      await _analyticsBox.put('daily_calories', caloriesData);
+      await _updateSyncStatus('analytics', DateTime.now());
+    } catch (e) {
+      throw Exception('Failed to save daily calories to cache: $e');
+    }
+  }
+
+  /// Load daily calories data from cache
+  Future<Map<String, dynamic>?> loadDailyCalories() async {
+    await _ensureInitialized();
+    try {
+      return _analyticsBox.get('daily_calories') as Map<String, dynamic>?;
+    } catch (e) {
+      throw Exception('Failed to load daily calories from cache: $e');
+    }
+  }
+
+  /// Save workout frequency data to cache
+  Future<void> saveWorkoutFrequency(Map<String, dynamic> frequencyData) async {
+    await _ensureInitialized();
+    try {
+      await _analyticsBox.put('workout_frequency', frequencyData);
+      await _updateSyncStatus('analytics', DateTime.now());
+    } catch (e) {
+      throw Exception('Failed to save workout frequency to cache: $e');
+    }
+  }
+
+  /// Load workout frequency data from cache
+  Future<Map<String, dynamic>?> loadWorkoutFrequency() async {
+    await _ensureInitialized();
+    try {
+      return _analyticsBox.get('workout_frequency') as Map<String, dynamic>?;
+    } catch (e) {
+      throw Exception('Failed to load workout frequency from cache: $e');
+    }
+  }
+
   /// Get cache statistics
   Map<String, int> getCacheStats() {
     return {
       'workouts': _workoutsBox.length,
       'checkins': _checkinsBox.length,
+      'analytics': _analyticsBox.length,
     };
   }
 
@@ -200,6 +269,7 @@ class CacheService {
       await _workoutsBox.close();
       await _checkinsBox.close();
       await _syncStatusBox.close();
+      await _analyticsBox.close();
       _isInitialized = false;
     }
   }

@@ -43,7 +43,7 @@ void main() async {
   getIt.registerSingleton<WorkoutService>(WorkoutService(getIt<CacheService>()));
   getIt.registerSingleton<CheckInService>(CheckInService(getIt<CacheService>()));
   getIt.registerSingleton<ProfileService>(ProfileService());
-  getIt.registerSingleton<AnalyticsService>(AnalyticsService());
+  getIt.registerSingleton<AnalyticsService>(AnalyticsService(getIt<CacheService>(), getIt<NetworkService>()));
   getIt.registerSingleton<AIService>(AIService(getIt<AnalyticsService>(), getIt<ProfileService>()));
   getIt.registerSingleton<GamificationService>(GamificationService(getIt<AnalyticsService>()));
   getIt.registerSingleton<SyncService>(SyncService(

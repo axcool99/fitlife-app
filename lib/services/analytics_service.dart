@@ -1,10 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout.dart';
+import 'cache_service.dart';
+import 'network_service.dart';
 
 class AnalyticsService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final CacheService _cacheService;
+  final NetworkService _networkService;
+
+  AnalyticsService(this._cacheService, this._networkService);
 
   String? get currentUserId => _auth.currentUser?.uid;
 
@@ -39,115 +45,208 @@ class AnalyticsService {
 
   // Calculate daily workout frequency for the past 7 days
   Future<Map<DateTime, int>> getDailyWorkoutFrequency() async {
-    final workouts = await getLast7DaysWorkouts();
-    final Map<DateTime, int> dailyFrequency = {};
+    try {
+      // Try to get fresh data from Firestore
+      final workouts = await getLast7DaysWorkouts();
+      final Map<DateTime, int> dailyFrequency = {};
 
-    // Initialize all 7 days with 0
-    for (int i = 6; i >= 0; i--) {
-      final date = DateTime.now().subtract(Duration(days: i));
-      final dateKey = DateTime(date.year, date.month, date.day);
-      dailyFrequency[dateKey] = 0;
-    }
-
-    // Count workouts per day
-    for (final workout in workouts) {
-      final workoutDate = DateTime(
-        workout.createdAt.year,
-        workout.createdAt.month,
-        workout.createdAt.day,
-      );
-      if (dailyFrequency.containsKey(workoutDate)) {
-        dailyFrequency[workoutDate] = dailyFrequency[workoutDate]! + 1;
+      // Initialize all 7 days with 0
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime.now().subtract(Duration(days: i));
+        final dateKey = DateTime(date.year, date.month, date.day);
+        dailyFrequency[dateKey] = 0;
       }
-    }
 
-    return dailyFrequency;
+      // Count workouts per day
+      for (final workout in workouts) {
+        final workoutDate = DateTime(
+          workout.createdAt.year,
+          workout.createdAt.month,
+          workout.createdAt.day,
+        );
+        if (dailyFrequency.containsKey(workoutDate)) {
+          dailyFrequency[workoutDate] = dailyFrequency[workoutDate]! + 1;
+        }
+      }
+
+      // Cache the fresh data
+      final cacheData = dailyFrequency.map((key, value) => MapEntry(key.toIso8601String(), value));
+      await _cacheService.saveWorkoutFrequency(cacheData);
+
+      return dailyFrequency;
+    } catch (e) {
+      print('Error fetching workout frequency from Firestore: $e');
+      // Fall back to cached data
+      try {
+        final cachedData = await _cacheService.loadWorkoutFrequency();
+        if (cachedData != null) {
+          return cachedData.map((key, value) => MapEntry(DateTime.parse(key), value as int));
+        }
+      } catch (cacheError) {
+        print('Error loading cached workout frequency: $cacheError');
+      }
+
+      // Return empty data if both Firestore and cache fail
+      final Map<DateTime, int> emptyData = {};
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime.now().subtract(Duration(days: i));
+        final dateKey = DateTime(date.year, date.month, date.day);
+        emptyData[dateKey] = 0;
+      }
+      return emptyData;
+    }
   }
 
   // Calculate estimated daily calories burned (simplified calculation)
   Future<Map<DateTime, double>> getDailyCaloriesBurned() async {
-    final workouts = await getLast7DaysWorkouts();
-    final Map<DateTime, double> dailyCalories = {};
+    try {
+      // Try to get fresh data from Firestore
+      final workouts = await getLast7DaysWorkouts();
+      final Map<DateTime, double> dailyCalories = {};
 
-    // Initialize all 7 days with 0
-    for (int i = 6; i >= 0; i--) {
-      final date = DateTime.now().subtract(Duration(days: i));
-      final dateKey = DateTime(date.year, date.month, date.day);
-      dailyCalories[dateKey] = 0.0;
-    }
-
-    // Estimate calories based on workout duration and intensity
-    for (final workout in workouts) {
-      final workoutDate = DateTime(
-        workout.createdAt.year,
-        workout.createdAt.month,
-        workout.createdAt.day,
-      );
-
-      if (dailyCalories.containsKey(workoutDate)) {
-        // Simple calorie estimation: base calories per workout + duration bonus
-        double calories = 50.0; // Base calories per workout
-
-        // Add calories based on duration (if available)
-        if (workout.duration != null) {
-          calories += (workout.duration! / 60.0) * 100; // ~100 calories per hour
-        }
-
-        // Add calories based on weight (if available and positive) - rough estimate
-        if (workout.weight != null && workout.weight! > 0) {
-          calories += workout.weight! * 0.5; // Rough multiplier - only for positive weights
-        }
-
-        // Ensure calories are never negative
-        calories = calories > 0 ? calories : 0.0;
-
-        dailyCalories[workoutDate] = dailyCalories[workoutDate]! + calories;
+      // Initialize all 7 days with 0
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime.now().subtract(Duration(days: i));
+        final dateKey = DateTime(date.year, date.month, date.day);
+        dailyCalories[dateKey] = 0.0;
       }
-    }
 
-    return dailyCalories;
+      // Estimate calories based on workout duration and intensity
+      for (final workout in workouts) {
+        final workoutDate = DateTime(
+          workout.createdAt.year,
+          workout.createdAt.month,
+          workout.createdAt.day,
+        );
+
+        if (dailyCalories.containsKey(workoutDate)) {
+          // Simple calorie estimation: base calories per workout + duration bonus
+          double calories = 50.0; // Base calories per workout
+
+          // Add calories based on duration (if available)
+          if (workout.duration != null) {
+            calories += (workout.duration! / 60.0) * 100; // ~100 calories per hour
+          }
+
+          // Add calories based on weight (if available and positive) - rough estimate
+          if (workout.weight != null && workout.weight! > 0) {
+            calories += workout.weight! * 0.5; // Rough multiplier - only for positive weights
+          }
+
+          // Ensure calories are never negative
+          calories = calories > 0 ? calories : 0.0;
+
+          dailyCalories[workoutDate] = dailyCalories[workoutDate]! + calories;
+        }
+      }
+
+      // Cache the fresh data
+      final cacheData = dailyCalories.map((key, value) => MapEntry(key.toIso8601String(), value));
+      await _cacheService.saveDailyCalories(cacheData);
+
+      return dailyCalories;
+    } catch (e) {
+      print('Error fetching daily calories from Firestore: $e');
+      // Fall back to cached data
+      try {
+        final cachedData = await _cacheService.loadDailyCalories();
+        if (cachedData != null) {
+          return cachedData.map((key, value) => MapEntry(DateTime.parse(key), value as double));
+        }
+      } catch (cacheError) {
+        print('Error loading cached daily calories: $cacheError');
+      }
+
+      // Return empty data if both Firestore and cache fail
+      final Map<DateTime, double> emptyData = {};
+      for (int i = 6; i >= 0; i--) {
+        final date = DateTime.now().subtract(Duration(days: i));
+        final dateKey = DateTime(date.year, date.month, date.day);
+        emptyData[dateKey] = 0.0;
+      }
+      return emptyData;
+    }
   }
 
   // Get weekly statistics
   Future<WeeklyStats> getWeeklyStats() async {
-    final currentWeekWorkouts = await getLast7DaysWorkouts();
-    final previousWeekWorkouts = await getPrevious7DaysWorkouts();
+    try {
+      // Try to get fresh data from Firestore
+      final currentWeekWorkouts = await getLast7DaysWorkouts();
+      final previousWeekWorkouts = await getPrevious7DaysWorkouts();
 
-    final totalWorkouts = currentWeekWorkouts.length;
-    final previousWeekTotal = previousWeekWorkouts.length;
+      final totalWorkouts = currentWeekWorkouts.length;
+      final previousWeekTotal = previousWeekWorkouts.length;
 
-    // Calculate average calories per session
-    double totalCalories = 0.0;
-    for (final workout in currentWeekWorkouts) {
-      double calories = 50.0;
-      if (workout.duration != null) {
-        calories += (workout.duration! / 60.0) * 100;
+      // Calculate average calories per session
+      double totalCalories = 0.0;
+      for (final workout in currentWeekWorkouts) {
+        double calories = 50.0;
+        if (workout.duration != null) {
+          calories += (workout.duration! / 60.0) * 100;
+        }
+        if (workout.weight != null) {
+          calories += workout.weight! * 0.5;
+        }
+        totalCalories += calories;
       }
-      if (workout.weight != null) {
-        calories += workout.weight! * 0.5;
+
+      final avgCaloriesPerSession = totalWorkouts > 0 ? totalCalories / totalWorkouts : 0.0;
+
+      // Calculate week-over-week progress
+      double progressPercentage = 0.0;
+      if (previousWeekTotal > 0) {
+        progressPercentage = ((totalWorkouts - previousWeekTotal) / previousWeekTotal) * 100;
+      } else if (totalWorkouts > 0) {
+        progressPercentage = 100.0; // If no previous workouts but has current, show 100% improvement
       }
-      totalCalories += calories;
+
+      // Calculate streak (consecutive days with workouts)
+      final streak = await calculateStreak();
+
+      final weeklyStats = WeeklyStats(
+        totalWorkouts: totalWorkouts,
+        avgCaloriesPerSession: avgCaloriesPerSession,
+        progressPercentage: progressPercentage,
+        streak: streak,
+      );
+
+      // Cache the fresh data
+      final cacheData = {
+        'totalWorkouts': totalWorkouts,
+        'avgCaloriesPerSession': avgCaloriesPerSession,
+        'progressPercentage': progressPercentage,
+        'streak': streak,
+        'cachedAt': DateTime.now().toIso8601String(),
+      };
+      await _cacheService.saveWeeklyStats(cacheData);
+
+      return weeklyStats;
+    } catch (e) {
+      print('Error fetching weekly stats from Firestore: $e');
+      // Fall back to cached data
+      try {
+        final cachedData = await _cacheService.loadWeeklyStats();
+        if (cachedData != null) {
+          return WeeklyStats(
+            totalWorkouts: cachedData['totalWorkouts'] ?? 0,
+            avgCaloriesPerSession: cachedData['avgCaloriesPerSession'] ?? 0.0,
+            progressPercentage: cachedData['progressPercentage'] ?? 0.0,
+            streak: cachedData['streak'] ?? 0,
+          );
+        }
+      } catch (cacheError) {
+        print('Error loading cached weekly stats: $cacheError');
+      }
+
+      // Return empty stats if both Firestore and cache fail
+      return WeeklyStats(
+        totalWorkouts: 0,
+        avgCaloriesPerSession: 0.0,
+        progressPercentage: 0.0,
+        streak: 0,
+      );
     }
-
-    final avgCaloriesPerSession = totalWorkouts > 0 ? totalCalories / totalWorkouts : 0.0;
-
-    // Calculate week-over-week progress
-    double progressPercentage = 0.0;
-    if (previousWeekTotal > 0) {
-      progressPercentage = ((totalWorkouts - previousWeekTotal) / previousWeekTotal) * 100;
-    } else if (totalWorkouts > 0) {
-      progressPercentage = 100.0; // If no previous workouts but has current, show 100% improvement
-    }
-
-    // Calculate streak (consecutive days with workouts)
-    final streak = await calculateStreak();
-
-    return WeeklyStats(
-      totalWorkouts: totalWorkouts,
-      avgCaloriesPerSession: avgCaloriesPerSession,
-      progressPercentage: progressPercentage,
-      streak: streak,
-    );
   }
 
   // Calculate current streak of consecutive active days
