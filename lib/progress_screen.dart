@@ -555,10 +555,14 @@ class _ProgressScreenState extends State<ProgressScreen> {
         }
 
         final data = snapshot.data!;
-        final spots = data.entries.map((entry) {
+        final spots = data.entries
+            .where((entry) => entry.value > 0) // Filter out zero and negative calories
+            .map((entry) {
           final daysAgo = DateTime.now().difference(entry.key).inDays;
           return FlSpot((6 - daysAgo).toDouble(), entry.value);
-        }).toList();
+        })
+            .toList()
+          ..sort((a, b) => a.x.compareTo(b.x)); // Sort by x-axis (date) for proper rendering
 
         if (spots.every((spot) => spot.y == 0)) {
           return _buildChartPlaceholder('Start working out to see your calorie burn!');
@@ -592,6 +596,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   height: 200,
                   child: LineChart(
                     LineChartData(
+                      minY: 0, // Ensure Y-axis starts at 0 to prevent below-graph drawing
                       gridData: FlGridData(
                         show: true,
                         drawVerticalLine: false,
@@ -650,6 +655,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         ),
                       ),
                       borderData: FlBorderData(show: false),
+                      clipData: FlClipData.all(), // Prevent line from drawing below chart area
                       lineBarsData: [
                         LineChartBarData(
                           spots: spots,
