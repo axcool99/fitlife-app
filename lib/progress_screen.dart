@@ -292,11 +292,21 @@ class _ProgressScreenState extends State<ProgressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText(
-                  'Daily Calories Burned',
-                  type: AppTextType.headingSmall,
-                  color: FitLifeTheme.accentBlue,
-                  useCleanStyle: true,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.local_fire_department,
+                      color: FitLifeTheme.accentBlue,
+                      size: 24,
+                    ),
+                    const SizedBox(width: FitLifeTheme.spacingS),
+                    AppText(
+                      'Daily Calories Burned',
+                      type: AppTextType.bodyLarge,
+                      color: FitLifeTheme.primaryText,
+                      useCleanStyle: true,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: FitLifeTheme.spacingM),
                 SizedBox(
@@ -366,11 +376,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
                       lineBarsData: [
                         LineChartBarData(
                           spots: snapshot.data!.entries.map((entry) {
-                            return FlSpot(
-                              entry.key.millisecondsSinceEpoch.toDouble(),
-                              entry.value,
-                            );
-                          }).toList(),
+                            final daysAgo = DateTime.now().difference(entry.key).inDays;
+                            return FlSpot((6 - daysAgo).toDouble(), entry.value);
+                          }).toList()..sort((a, b) => a.x.compareTo(b.x)),
                           isCurved: true,
                           color: FitLifeTheme.accentBlue,
                           barWidth: 3,
@@ -472,11 +480,21 @@ class _ProgressScreenState extends State<ProgressScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppText(
-                  'Daily Workout Frequency',
-                  type: AppTextType.headingSmall,
-                  color: FitLifeTheme.accentPurple,
-                  useCleanStyle: true,
+                Row(
+                  children: [
+                    Icon(
+                      Icons.fitness_center,
+                      color: FitLifeTheme.accentGreen,
+                      size: 24,
+                    ),
+                    const SizedBox(width: FitLifeTheme.spacingS),
+                    AppText(
+                      'Daily Workout Frequency',
+                      type: AppTextType.bodyLarge,
+                      color: FitLifeTheme.primaryText,
+                      useCleanStyle: true,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: FitLifeTheme.spacingM),
                 SizedBox(
@@ -547,7 +565,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           barRods: [
                             BarChartRodData(
                               toY: entry.value.toDouble(),
-                              color: FitLifeTheme.accentPurple,
+                              color: FitLifeTheme.accentGreen,
                               width: 16,
                               borderRadius: BorderRadius.circular(4),
                               backDrawRodData: BackgroundBarChartRodData(
