@@ -3,9 +3,13 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/workout.dart';
 import '../models/checkin.dart';
+import 'network_service.dart';
 
 /// Cache service for offline data storage using Hive
 class CacheService {
+  final NetworkService _networkService;
+
+  CacheService(this._networkService);
   static const String _workoutsBoxName = 'workouts';
   static const String _checkinsBoxName = 'checkins';
   static const String _syncStatusBoxName = 'sync_status';
@@ -43,14 +47,9 @@ class CacheService {
     }
   }
 
-  /// Check if device is online (basic connectivity check)
+  /// Check if device is online using NetworkService
   Future<bool> isOnline() async {
-    try {
-      // Simple connectivity check - in a real app, you'd use connectivity_plus
-      return true; // For now, assume online
-    } catch (e) {
-      return false;
-    }
+    return await _networkService.isOnline();
   }
 
   // ===== WORKOUTS CACHE =====

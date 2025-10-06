@@ -28,6 +28,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   _WorkoutScreenState({Key? key}) : super();
 
   final WorkoutService _workoutService = getIt<WorkoutService>();
+  final NetworkService _networkService = getIt<NetworkService>();
+  final SyncService _syncService = getIt<SyncService>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isOnline = true; // Track online status
@@ -36,12 +38,20 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   void initState() {
     super.initState();
     _checkConnectivity();
+    _setupConnectivityListener();
+  }
+
+  void _setupConnectivityListener() {
+    _networkService.connectivityStream.listen((ConnectivityResult result) async {
+      // When connectivity changes, check actual online status
+      await _checkConnectivity();
+    });
   }
 
   Future<void> _checkConnectivity() async {
     try {
       final wasOnline = _isOnline;
-      final isOnline = await getIt<CacheService>().isOnline();
+      final isOnline = await _networkService.isOnline();
 
       if (mounted) {
         setState(() {
@@ -59,6 +69,19 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           _isOnline = false;
         });
       }
+    }
+  }
+
+  Future<void> _syncCachedData() async {
+    try {
+      final hasPending = await _syncService.hasPendingSync();
+      if (hasPending) {
+        await _syncService.syncAllData();
+        // Refresh the UI after sync
+        setState(() {});
+      }
+    } catch (e) {
+      print('Error syncing cached data: $e');
     }
   }
 
@@ -195,7 +218,40 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         title: 'Your Workouts',
         automaticallyImplyLeading: false,
       ),
-      body: StreamBuilder<List<Workout>>(
+      body: Column(
+        children: [
+          // Offline indicator
+          if (!_isOnline)
+            Container(
+              margin: const EdgeInsets.all(FitLifeTheme.spacingM),
+              padding: const EdgeInsets.all(FitLifeTheme.spacingS),
+              decoration: BoxDecoration(
+                color: FitLifeTheme.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(FitLifeTheme.radiusM),
+                border: Border.all(color: FitLifeTheme.error.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.wifi_off,
+                    color: FitLifeTheme.error,
+                    size: 20,
+                  ),
+                  const SizedBox(width: FitLifeTheme.spacingS),
+                  Expanded(
+                    child: AppText(
+                      'You\'re offline. Changes will be synced when connection is restored.',
+                      type: AppTextType.bodySmall,
+                      color: FitLifeTheme.error,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Main content
+          Expanded(
+            child: StreamBuilder<List<Workout>>(
         stream: _workoutService.getWorkouts(), // Changed from getTodaysWorkouts() to show all workouts including past ones
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -516,6 +572,9 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             ],
           );
         },
+      ),
+          ),
+        ],
       ),
       floatingActionButton: AnimatedFAB(
         onPressed: _addExercise,

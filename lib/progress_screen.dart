@@ -3,12 +3,14 @@ import 'package:get_it/get_it.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'ui/components/components.dart';
 import 'services/analytics_service.dart';
 import 'services/checkin_service.dart';
 import 'services/gamification_service.dart';
 import 'services/cache_service.dart';
 import 'services/sync_service.dart';
+import 'services/network_service.dart';
 import 'models/checkin.dart';
 import 'models/badge.dart' as badge_model;
 import 'main_scaffold.dart';
@@ -25,6 +27,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
   final AnalyticsService _analyticsService = getIt<AnalyticsService>();
   final CheckInService _checkInService = getIt<CheckInService>();
   final GamificationService _gamificationService = getIt<GamificationService>();
+  final NetworkService _networkService = getIt<NetworkService>();
+  final SyncService _syncService = getIt<SyncService>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isOnline = true; // Track online status
@@ -33,12 +37,20 @@ class _ProgressScreenState extends State<ProgressScreen> {
   void initState() {
     super.initState();
     _checkConnectivity();
+    _setupConnectivityListener();
+  }
+
+  void _setupConnectivityListener() {
+    _networkService.connectivityStream.listen((ConnectivityResult result) async {
+      // When connectivity changes, check actual online status
+      await _checkConnectivity();
+    });
   }
 
   Future<void> _checkConnectivity() async {
     try {
       final wasOnline = _isOnline;
-      final isOnline = await getIt<CacheService>().isOnline();
+      final isOnline = await _networkService.isOnline();
 
       if (mounted) {
         setState(() {
@@ -61,9 +73,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
   Future<void> _syncCachedData() async {
     try {
-      final hasPending = await getIt<SyncService>().hasPendingSync();
+      final hasPending = await _syncService.hasPendingSync();
       if (hasPending) {
-        await getIt<SyncService>().syncAllData();
+        await _syncService.syncAllData();
         // Refresh the UI after sync
         setState(() {});
       }
@@ -80,11 +92,123 @@ class _ProgressScreenState extends State<ProgressScreen> {
         title: 'Progress & Analytics',
         automaticallyImplyLeading: false,
       ),
-      body: FutureBuilder<WeeklyStats>(
+      body: Column(
+        children: [
+          // Offline indicator
+          if (!_isOnline) ...[
+            Container(
+              margin: const EdgeInsets.all(FitLifeTheme.spacingM),
+              padding: const EdgeInsets.all(FitLifeTheme.spacingS),
+              decoration: BoxDecoration(
+                color: FitLifeTheme.error.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(FitLifeTheme.radiusM),
+                border: Border.all(color: FitLifeTheme.error.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.wifi_off,
+                    color: FitLifeTheme.error,
+                    size: 20,
+                  ),
+                  const SizedBox(width: FitLifeTheme.spacingS),
+                  Expanded(
+                    child: AppText(
+                      'You\'re offline. Changes will be synced when connection is restored.',
+                      type: AppTextType.bodySmall,
+                      color: FitLifeTheme.error,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Main content
+          Expanded(
+            child: FutureBuilder<WeeklyStats>(
         future: _analyticsService.getWeeklyStats(),
         builder: (context, statsSnapshot) {
           if (statsSnapshot.connectionState == ConnectionState.waiting) {
             return ShimmerLoading(
+              child: Column(
+                children: [
+                  SkeletonChart(),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(child: SkeletonCard(height: 100)),
+                      const SizedBox(width: 16),
+                      Expanded(child: SkeletonCard(height: 100)),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  SkeletonChart(),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(child: SkeletonCard(height: 80)),
+                      const SizedBox(width: 16),
+                      Expanded(child: SkeletonCard(height: 80)),
+                      const SizedBox(width: 16),
+                      Expanded(child: SkeletonCard(height: 80)),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (statsSnapshot.hasError || !statsSnapshot.hasData) {
+            return ErrorState(
+              icon: Icons.error_outline,
+              title: 'Unable to load progress data',
+              message: 'Please check your connection and try again.',
+              onRetry: () => setState(() {}),
+            );
+          }
+
+          final stats = statsSnapshot.data!;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(FitLifeTheme.spacingM),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Weekly Stats Cards
+                _buildStatsCards(stats),
+
+                const SizedBox(height: FitLifeTheme.spacingXL),
+
+                // Weight Trend Chart
+                _buildWeightChart(),
+
+                const SizedBox(height: FitLifeTheme.spacingXL),
+
+                // Calories Burned Chart
+                _buildCaloriesChart(),
+
+                const SizedBox(height: FitLifeTheme.spacingXL),
+
+                // Workout Frequency Chart
+                _buildWorkoutFrequencyChart(),
+
+                const SizedBox(height: FitLifeTheme.spacingXL),
+
+                // Badges Section
+                _buildBadgesSection(),
+
+                const SizedBox(height: FitLifeTheme.spacingXXL),
+              ],
+            ),
+          );
+        },
+      ),
+    ),
+  ],
+);
+  }
+
+  Widget _buildCaloriesChart() {
               child: Column(
                 children: [
                   SkeletonChart(),
@@ -812,7 +936,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
           );
         },
       ),
-    );
+    ),
+  ],
+);
   }
 
   Widget _buildCaloriesChart() {

@@ -32,9 +32,11 @@ void main() async {
   );
 
   // Initialize and register services with dependency injection
-  final cacheService = CacheService();
+  final networkService = NetworkService();
+  final cacheService = CacheService(networkService);
   await cacheService.initialize();
 
+  getIt.registerSingleton<NetworkService>(networkService);
   getIt.registerSingleton<CacheService>(cacheService);
   getIt.registerSingleton<FitnessDataService>(FitnessDataService());
   getIt.registerSingleton<WorkoutService>(WorkoutService(getIt<CacheService>()));

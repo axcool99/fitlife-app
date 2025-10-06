@@ -13,6 +13,7 @@ class FitLifeTheme {
   static const Color accentOrange = Color(0xFFFFA500);
   static const Color accentPurple = Color(0xFF9B59B6);
   static const Color highlightPink = Color(0xFFFF0099);
+  static const Color error = Color(0xFFFF4444); // Error color for validation and offline indicators
 
   // ===== BACKWARD COMPATIBILITY COLORS =====
   // These maintain compatibility with existing components
@@ -246,6 +247,7 @@ class FitLifeTheme {
   static const double cardBorderRadius = 16.0;
   static const double inputBorderRadius = 12.0;
   static const double buttonBorderRadius = 12.0;
+  static const double radiusM = 12.0; // Medium border radius for consistency
 
   // ===== LEGACY COMPATIBILITY =====
   static const double legacyButtonBorderRadius = buttonBorderRadius;
