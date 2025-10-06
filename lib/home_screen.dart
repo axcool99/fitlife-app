@@ -701,7 +701,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           sideTitles: SideTitles(
                                             showTitles: true,
                                             reservedSize: 30,
-                                            interval: 1,
+                                            interval: 1, // One label per day for 7 days max
                                             getTitlesWidget: (value, meta) {
                                               final dayIndex = value.toInt();
                                               if (dayIndex >= 0 && dayIndex < 7) {
@@ -856,9 +856,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           .toList()
                         ..sort((a, b) => a.x.compareTo(b.x)); // Sort by x-axis (date) for proper rendering
 
-                      if (spots.every((spot) => spot.y == 0)) {
-                        return _buildChartPlaceholder('Start working out to see your calorie burn!');
-                      }
+                      final hasCaloriesData = spots.isNotEmpty;
+
+                      // Calculate proper intervals to prevent too many axis labels
+                      final intervals = hasCaloriesData ? _calculateCaloriesChartIntervals(data) : {'horizontalInterval': 100.0, 'verticalInterval': 100.0};
 
                       return AppCard(
                         useCleanStyle: true,
@@ -884,137 +885,153 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ),
                               const SizedBox(height: FitLifeTheme.spacingL),
-                              SizedBox(
-                                height: 200,
-                                child: LineChart(
-                                  LineChartData(
-                                    minY: 0, // Ensure Y-axis starts at 0 to prevent below-graph drawing
-                                    gridData: FlGridData(
-                                      show: true,
-                                      drawVerticalLine: false,
-                                      horizontalInterval: 50,
-                                      getDrawingHorizontalLine: (value) {
-                                        return FlLine(
-                                          color: FitLifeTheme.dividerColor,
-                                          strokeWidth: 1,
-                                        );
-                                      },
-                                    ),
-                                    titlesData: FlTitlesData(
-                                      show: true,
-                                      rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                      topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                                      bottomTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          reservedSize: 30,
-                                          interval: 1,
-                                          getTitlesWidget: (value, meta) {
-                                            final dayIndex = value.toInt();
-                                            if (dayIndex >= 0 && dayIndex < 7) {
-                                              final date = DateTime.now().subtract(Duration(days: 6 - dayIndex));
-                                              final weekday = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][date.weekday - 1];
-                                              return Padding(
-                                                padding: const EdgeInsets.only(top: 8.0),
-                                                child: Text(
-                                                  weekday,
-                                                  style: TextStyle(
-                                                    color: FitLifeTheme.primaryText.withOpacity(0.6),
-                                                    fontSize: 12,
+                              if (hasCaloriesData) ...[
+                                SizedBox(
+                                  height: 200,
+                                  child: LineChart(
+                                    LineChartData(
+                                      minY: 0, // Ensure Y-axis starts at 0 to prevent below-graph drawing
+                                      gridData: FlGridData(
+                                        show: true,
+                                        drawVerticalLine: false,
+                                        horizontalInterval: intervals['horizontalInterval']!,
+                                        getDrawingHorizontalLine: (value) {
+                                          return FlLine(
+                                            color: FitLifeTheme.dividerColor,
+                                            strokeWidth: 1,
+                                          );
+                                        },
+                                      ),
+                                      titlesData: FlTitlesData(
+                                        show: true,
+                                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                        bottomTitles: AxisTitles(
+                                          sideTitles: SideTitles(
+                                            showTitles: true,
+                                            reservedSize: 30,
+                                            interval: 1, // One label per day for 7 days max
+                                            getTitlesWidget: (value, meta) {
+                                              final dayIndex = value.toInt();
+                                              if (dayIndex >= 0 && dayIndex < 7) {
+                                                final date = DateTime.now().subtract(Duration(days: 6 - dayIndex));
+                                                final weekday = ['M', 'T', 'W', 'T', 'F', 'S', 'S'][date.weekday - 1];
+                                                return Padding(
+                                                  padding: const EdgeInsets.only(top: 8.0),
+                                                  child: Text(
+                                                    weekday,
+                                                    style: TextStyle(
+                                                      color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                                      fontSize: 12,
+                                                    ),
                                                   ),
+                                                );
+                                              }
+                                              return const Text('');
+                                            },
+                                          ),
+                                        ),
+                                        leftTitles: AxisTitles(
+                                          sideTitles: SideTitles(
+                                            showTitles: true,
+                                            interval: intervals['verticalInterval']!,
+                                            reservedSize: 40,
+                                            getTitlesWidget: (value, meta) {
+                                              return Text(
+                                                value.toInt().toString(),
+                                                style: TextStyle(
+                                                  color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                                  fontSize: 12,
                                                 ),
                                               );
-                                            }
-                                            return const Text('');
-                                          },
+                                            },
+                                          ),
                                         ),
                                       ),
-                                      leftTitles: AxisTitles(
-                                        sideTitles: SideTitles(
-                                          showTitles: true,
-                                          interval: 100,
-                                          reservedSize: 40,
-                                          getTitlesWidget: (value, meta) {
-                                            return Text(
-                                              value.toInt().toString(),
-                                              style: TextStyle(
-                                                color: FitLifeTheme.primaryText.withOpacity(0.6),
-                                                fontSize: 12,
-                                              ),
-                                            );
-                                          },
+                                      borderData: FlBorderData(show: false),
+                                      clipData: FlClipData.all(), // Prevent line from drawing below chart area
+                                      lineBarsData: [
+                                        LineChartBarData(
+                                          spots: spots,
+                                          isCurved: true,
+                                          color: FitLifeTheme.accentBlue,
+                                          barWidth: 3,
+                                          isStrokeCapRound: true,
+                                          dotData: FlDotData(
+                                            show: true,
+                                            getDotPainter: (spot, percent, barData, index) {
+                                              return FlDotCirclePainter(
+                                                radius: 4,
+                                                color: FitLifeTheme.accentBlue,
+                                                strokeWidth: 2,
+                                                strokeColor: FitLifeTheme.background,
+                                              );
+                                            },
+                                          ),
+                                          belowBarData: BarAreaData(
+                                            show: true,
+                                            color: FitLifeTheme.accentBlue.withOpacity(0.1),
+                                          ),
                                         ),
-                                      ),
-                                    ),
-                                    borderData: FlBorderData(show: false),
-                                    clipData: FlClipData.all(), // Prevent line from drawing below chart area
-                                    lineBarsData: [
-                                      LineChartBarData(
-                                        spots: spots,
-                                        isCurved: true,
-                                        color: FitLifeTheme.accentBlue,
-                                        barWidth: 3,
-                                        isStrokeCapRound: true,
-                                        dotData: FlDotData(
-                                          show: true,
-                                          getDotPainter: (spot, percent, barData, index) {
-                                            return FlDotCirclePainter(
-                                              radius: 4,
-                                              color: FitLifeTheme.accentBlue,
-                                              strokeWidth: 2,
-                                              strokeColor: FitLifeTheme.background,
-                                            );
-                                          },
-                                        ),
-                                        belowBarData: BarAreaData(
-                                          show: true,
-                                          color: FitLifeTheme.accentBlue.withOpacity(0.1),
-                                        ),
-                                      ),
-                                    ],
-                                    lineTouchData: LineTouchData(
-                                      enabled: true,
-                                      handleBuiltInTouches: false,
-                                      getTouchedSpotIndicator: (barData, spotIndexes) {
-                                        return spotIndexes.map((spotIndex) {
-                                          return TouchedSpotIndicatorData(
-                                            FlLine(color: FitLifeTheme.accentBlue, strokeWidth: 2),
-                                            FlDotData(
-                                              getDotPainter: (spot, percent, barData, index) =>
-                                                  FlDotCirclePainter(
-                                                    radius: 6,
-                                                    color: FitLifeTheme.accentBlue,
-                                                    strokeWidth: 2,
-                                                    strokeColor: FitLifeTheme.surfaceColor,
-                                                  ),
-                                            ),
-                                          );
-                                        }).toList();
-                                      },
-                                      touchTooltipData: LineTouchTooltipData(
-                                        tooltipBgColor: Colors.transparent,
-                                        tooltipPadding: EdgeInsets.zero,
-                                        tooltipMargin: 8,
-                                        tooltipRoundedRadius: 0,
-                                        getTooltipItems: (touchedSpots) {
-                                          return touchedSpots.map((touchedSpot) {
-                                            final value = touchedSpot.y;
-                                            if (value == 0) return null;
-                                            return LineTooltipItem(
-                                              value.toStringAsFixed(0),
-                                              TextStyle(
-                                                color: FitLifeTheme.textSecondary,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w500,
+                                      ],
+                                      lineTouchData: LineTouchData(
+                                        enabled: true,
+                                        handleBuiltInTouches: false,
+                                        getTouchedSpotIndicator: (barData, spotIndexes) {
+                                          return spotIndexes.map((spotIndex) {
+                                            return TouchedSpotIndicatorData(
+                                              FlLine(color: FitLifeTheme.accentBlue, strokeWidth: 2),
+                                              FlDotData(
+                                                getDotPainter: (spot, percent, barData, index) =>
+                                                    FlDotCirclePainter(
+                                                      radius: 6,
+                                                      color: FitLifeTheme.accentBlue,
+                                                      strokeWidth: 2,
+                                                      strokeColor: FitLifeTheme.surfaceColor,
+                                                    ),
                                               ),
                                             );
                                           }).toList();
                                         },
+                                        touchTooltipData: LineTouchTooltipData(
+                                          tooltipBgColor: Colors.transparent,
+                                          tooltipPadding: EdgeInsets.zero,
+                                          tooltipMargin: 8,
+                                          tooltipRoundedRadius: 0,
+                                          getTooltipItems: (touchedSpots) {
+                                            return touchedSpots.map((touchedSpot) {
+                                              final value = touchedSpot.y;
+                                              if (value == 0) return null;
+                                              return LineTooltipItem(
+                                                value.toStringAsFixed(0),
+                                                TextStyle(
+                                                  color: FitLifeTheme.textSecondary,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              );
+                                            }).toList();
+                                          },
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
+                              ] else ...[
+                                // Empty state when no calories data
+                                Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: FitLifeTheme.spacingXL),
+                                    child: AppText(
+                                      'No calories data this week',
+                                      type: AppTextType.bodyMedium,
+                                      color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                      useCleanStyle: true,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -1281,14 +1298,72 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // Calculate appropriate interval based on range
     final actualRange = maxY - minY;
-    double interval = 15.0; // Default
+    double interval = 10.0; // Start with reasonable default
     if (actualRange <= 50.0) {
-      interval = 10.0; // Interval for tighter ranges
-    } else if (actualRange > 100.0) {
-      interval = 25.0; // Larger interval for wider ranges
+      interval = 5.0; // Smaller interval for tighter ranges
+    } else if (actualRange <= 100.0) {
+      interval = 10.0; // Standard interval
+    } else if (actualRange <= 200.0) {
+      interval = 20.0; // Medium interval
+    } else {
+      interval = 25.0; // Larger interval for wide ranges
     }
 
+    // Guard: Ensure no more than 20 axis labels
+    final maxLabels = 20;
+    final calculatedLabels = (actualRange / interval).ceil();
+    if (calculatedLabels > maxLabels) {
+      interval = (actualRange / maxLabels).ceilToDouble();
+      // Round interval to nearest 5 for clean numbers
+      interval = ((interval + 4) ~/ 5) * 5.0;
+    }
+
+    // Ensure interval is at least 1 and reasonable
+    interval = interval.clamp(1.0, 50.0);
+
     return {'minY': minY, 'maxY': maxY, 'interval': interval};
+  }
+
+  /// Calculate dynamic intervals for calories chart to prevent too many axis labels
+  Map<String, double> _calculateCaloriesChartIntervals(Map<DateTime, double> data) {
+    if (data.isEmpty) {
+      return {'horizontalInterval': 50.0, 'verticalInterval': 100.0};
+    }
+
+    // Find max calories value
+    final maxCalories = data.values.reduce((a, b) => a > b ? a : b);
+    final minCalories = 0.0; // Always start from 0
+    final range = maxCalories - minCalories;
+
+    // Calculate vertical interval (Y-axis)
+    double verticalInterval = 50.0; // Default
+    if (range <= 200) {
+      verticalInterval = 25.0;
+    } else if (range <= 500) {
+      verticalInterval = 50.0;
+    } else if (range <= 1000) {
+      verticalInterval = 100.0;
+    } else {
+      verticalInterval = 200.0;
+    }
+
+    // Guard: Ensure no more than 20 vertical labels
+    final maxLabels = 20;
+    final calculatedLabels = (range / verticalInterval).ceil();
+    if (calculatedLabels > maxLabels) {
+      verticalInterval = (range / maxLabels).ceilToDouble();
+      // Round to nearest 25 for clean numbers
+      verticalInterval = ((verticalInterval + 24) ~/ 25) * 25.0;
+    }
+
+    // Ensure reasonable bounds
+    verticalInterval = verticalInterval.clamp(10.0, 500.0);
+
+    // Horizontal interval is always 1 day for 7 days max, so no issue
+    return {
+      'horizontalInterval': 50.0, // Fixed for calories
+      'verticalInterval': verticalInterval
+    };
   }
 
   /// Generate chart data from weekly fitness data
