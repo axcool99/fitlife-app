@@ -25,51 +25,6 @@ class ExerciseChoiceDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: FitLifeTheme.accentGreen.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.add,
-                    color: FitLifeTheme.accentGreen,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: FitLifeTheme.spacingM),
-                Expanded(
-                  child: AppText(
-                    'Add Workout',
-                    type: AppTextType.headingMedium,
-                    color: FitLifeTheme.primaryText,
-                    useCleanStyle: true,
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(
-                    Icons.close,
-                    color: FitLifeTheme.primaryText.withOpacity(0.7),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: FitLifeTheme.spacingL),
-
-            AppText(
-              'How would you like to add your workout?',
-              type: AppTextType.bodyMedium,
-              color: FitLifeTheme.primaryText.withOpacity(0.8),
-              useCleanStyle: true,
-            ),
-
-            const SizedBox(height: FitLifeTheme.spacingXL),
 
             // Quick Add Option
             _buildChoiceButton(
