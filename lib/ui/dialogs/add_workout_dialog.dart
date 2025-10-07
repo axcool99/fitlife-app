@@ -24,8 +24,6 @@ class _AddWorkoutDialogState extends State<AddWorkoutDialog> {
   final _exerciseController = TextEditingController();
   final _setsController = TextEditingController(text: '3');
   final _repsController = TextEditingController(text: '10');
-  final _durationController = TextEditingController();
-  final _weightController = TextEditingController();
   final _notesController = TextEditingController();
 
   bool _isLoading = false;
@@ -37,9 +35,6 @@ class _AddWorkoutDialogState extends State<AddWorkoutDialog> {
       _exerciseController.text = widget.suggestion!.exerciseName;
       _setsController.text = widget.suggestion!.suggestedSets.toString();
       _repsController.text = widget.suggestion!.suggestedReps.toString();
-      if (widget.suggestion!.suggestedWeight != null) {
-        _weightController.text = widget.suggestion!.suggestedWeight!.toStringAsFixed(1);
-      }
       _notesController.text = 'AI Suggested.';
     }
   }
@@ -49,8 +44,6 @@ class _AddWorkoutDialogState extends State<AddWorkoutDialog> {
     _exerciseController.dispose();
     _setsController.dispose();
     _repsController.dispose();
-    _durationController.dispose();
-    _weightController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -65,8 +58,6 @@ class _AddWorkoutDialogState extends State<AddWorkoutDialog> {
         exerciseName: _exerciseController.text.trim(),
         sets: int.parse(_setsController.text),
         reps: int.parse(_repsController.text),
-        duration: _durationController.text.isNotEmpty ? int.parse(_durationController.text) : null,
-        weight: _weightController.text.isNotEmpty ? double.parse(_weightController.text) : null,
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       );
 
@@ -263,86 +254,6 @@ class _AddWorkoutDialogState extends State<AddWorkoutDialog> {
                 ],
               ),
 
-              const SizedBox(height: FitLifeTheme.spacingM),
-
-              // Duration and Weight Row
-              Row(
-                children: [
-                  // Duration
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText(
-                          'Duration (sec)',
-                          type: AppTextType.bodyMedium,
-                          color: FitLifeTheme.primaryText,
-                          useCleanStyle: true,
-                        ),
-                        const SizedBox(height: FitLifeTheme.spacingXS),
-                        AppInput(
-                          controller: _durationController,
-                          hintText: 'Optional',
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(4),
-                          ],
-                          validator: (value) {
-                            if (value != null && value.isNotEmpty) {
-                              final duration = int.tryParse(value);
-                              if (duration == null || duration < 1 || duration > 3600) {
-                                return '1-3600';
-                              }
-                            }
-                            return null;
-                          },
-                          textInputAction: TextInputAction.next,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(width: FitLifeTheme.spacingM),
-
-                  // Weight
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AppText(
-                          'Weight (kg)',
-                          type: AppTextType.bodyMedium,
-                          color: FitLifeTheme.primaryText,
-                          useCleanStyle: true,
-                        ),
-                        const SizedBox(height: FitLifeTheme.spacingXS),
-                        AppInput(
-                          controller: _weightController,
-                          hintText: 'Optional',
-                          keyboardType: TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-                            LengthLimitingTextInputFormatter(6),
-                          ],
-                          validator: (value) {
-                            if (value != null && value.isNotEmpty) {
-                              final weight = double.tryParse(value);
-                              if (weight == null || weight < 0.1 || weight > 500) {
-                                return '0.1-500';
-                              }
-                            }
-                            return null;
-                          },
-                          textInputAction: TextInputAction.next,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: FitLifeTheme.spacingM),
 
               // Notes (Optional)
               AppText(
