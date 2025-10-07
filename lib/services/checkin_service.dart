@@ -47,7 +47,7 @@ class CheckInService {
         .transform(StreamTransformers.fallbackToCache<List<CheckIn>>(() async {
           final cachedCheckIns = await _cacheService.loadCheckIns();
           cachedCheckIns.sort((a, b) => b.date.compareTo(a.date));
-          return cachedCheckIns;
+          return cachedCheckIns.cast<CheckIn>();
         }));
   }
 
@@ -128,7 +128,7 @@ class CheckInService {
             .toList()
             ..sort((a, b) => a.date.compareTo(b.date)); // Oldest first for trend charts
 
-        return recentCachedCheckIns;
+        return recentCachedCheckIns.cast<CheckIn>();
       } catch (cacheError) {
         print('Error loading cached recent check-ins: $cacheError');
         return [];

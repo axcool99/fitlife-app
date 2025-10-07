@@ -41,7 +41,7 @@ class WorkoutService {
 
           return workouts;
         })
-        .transform(StreamTransformers.fallbackToCache<List<Workout>>(() => _cacheService.loadWorkouts()));
+        .transform(StreamTransformers.fallbackToCache<List<Workout>>(() async => (_cacheService.loadWorkouts() as List<dynamic>).cast<Workout>()));
   }
 
   // Add new workout (with offline support)
@@ -173,7 +173,7 @@ class WorkoutService {
               .toList()
             ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-          return todaysCachedWorkouts;
+          return todaysCachedWorkouts.cast<Workout>();
         }));
   }
 }

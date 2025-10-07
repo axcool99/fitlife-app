@@ -20,7 +20,9 @@ dependencies:
   get_it: ^7.6.0
   connectivity_plus: ^5.0.0
   http: ^1.1.0
+  cached_network_image: ^3.3.0
   health: ^13.2.0
+  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -31,6 +33,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - .env
     - FitLife Logo with Green Graph.png
     - fitlife-logo.jpg
 

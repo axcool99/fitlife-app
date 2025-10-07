@@ -1,597 +1,388 @@
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
-import '../models/workout.dart';
-import '../models/checkin.dart';
 import '../models/models.dart';
-import 'network_service.dart';
 
-/// Cache service for offline data storage using Hive
+/// Provides lightweight local caching for API responses and app data.
+/// Uses Hive for persistent key-value storage with automatic TTL validation.
 class CacheService {
-  final NetworkService _networkService;
-
-  CacheService(this._networkService);
-  static const String _workoutsBoxName = 'workouts';
-  static const String _checkinsBoxName = 'checkins';
-  static const String _syncStatusBoxName = 'sync_status';
-  static const String _analyticsBoxName = 'analytics';
-  static const String _mealsBoxName = 'meals';
-  static const String _foodItemsBoxName = 'food_items';
-  static const String _userPreferencesBoxName = 'user_preferences';
-
-  late Box<Workout> _workoutsBox;
-  late Box<CheckIn> _checkinsBox;
-  late Box _syncStatusBox;
-  late Box _analyticsBox;
-  late Box _mealsBox;
-  late Box _foodItemsBox;
-  late Box _userPreferencesBox;
-
+  static const String _boxName = 'fitlife_cache';
+  late Box _box;
   bool _isInitialized = false;
 
-  /// Initialize Hive and open boxes
-  Future<void> initialize() async {
+  /// Initialize Hive and open the cache box.
+  /// Should be called once during app startup.
+  Future<void> init() async {
     if (_isInitialized) return;
 
     try {
       final appDocumentDir = await getApplicationDocumentsDirectory();
       await Hive.initFlutter(appDocumentDir.path);
-
-      // Register adapters
-      if (!Hive.isAdapterRegistered(0)) {
-        Hive.registerAdapter(WorkoutAdapter());
-      }
-      if (!Hive.isAdapterRegistered(1)) {
-        Hive.registerAdapter(CheckInAdapter());
-      }
-
-      // Open boxes
-      _workoutsBox = await Hive.openBox<Workout>(_workoutsBoxName);
-      _checkinsBox = await Hive.openBox<CheckIn>(_checkinsBoxName);
-      _syncStatusBox = await Hive.openBox(_syncStatusBoxName);
-      _analyticsBox = await Hive.openBox(_analyticsBoxName);
-      _mealsBox = await Hive.openBox(_mealsBoxName);
-      _foodItemsBox = await Hive.openBox(_foodItemsBoxName);
-      _userPreferencesBox = await Hive.openBox(_userPreferencesBoxName);
-
+      _box = await Hive.openBox(_boxName);
       _isInitialized = true;
     } catch (e) {
-      throw Exception('Failed to initialize cache: $e');
+      print('CacheService: Failed to initialize: $e');
+      rethrow;
     }
   }
 
-  /// Check if device is online using NetworkService
-  Future<bool> isOnline() async {
-    return await _networkService.isOnline();
-  }
-
-  // ===== WORKOUTS CACHE =====
-
-  /// Save workouts to cache
-  Future<void> saveWorkouts(List<Workout> workouts) async {
+  /// Save data to cache with optional TTL.
+  /// [key] Unique identifier for the cached item
+  /// [value] The data to cache (must be JSON serializable)
+  /// [ttlSeconds] Time-to-live in seconds (default: 7 days = 604800)
+  Future<void> save(String key, dynamic value, {int ttlSeconds = 604800}) async {
     await _ensureInitialized();
     try {
-      await _workoutsBox.clear(); // Clear existing data
-      for (final workout in workouts) {
-        await _workoutsBox.put(workout.id, workout);
+      final cacheEntry = {
+        'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        'data': value,
+        'ttl': ttlSeconds,
+      };
+      await _box.put(key, cacheEntry);
+      print('CacheService: Cache saved for key: $key');
+    } catch (e) {
+      print('CacheService: Failed to save cache for key $key: $e');
+    }
+  }
+
+  /// Retrieve cached data by key.
+  /// Returns null if key doesn't exist or on error.
+  Future<dynamic> get(String key) async {
+    await _ensureInitialized();
+    try {
+      final cachedItem = _box.get(key);
+      if (cachedItem == null) {
+        print('CacheService: Cache miss for key: $key');
+        return null;
       }
-      await _updateSyncStatus('workouts', DateTime.now());
+
+      print('CacheService: Cache hit for key: $key');
+      return cachedItem;
     } catch (e) {
-      throw Exception('Failed to save workouts to cache: $e');
-    }
-  }
-
-  /// Load workouts from cache
-  Future<List<Workout>> loadWorkouts() async {
-    await _ensureInitialized();
-    try {
-      return _workoutsBox.values.toList();
-    } catch (e) {
-      throw Exception('Failed to load workouts from cache: $e');
-    }
-  }
-
-  /// Add or update a single workout in cache
-  Future<void> saveWorkout(Workout workout) async {
-    await _ensureInitialized();
-    try {
-      await _workoutsBox.put(workout.id, workout);
-    } catch (e) {
-      throw Exception('Failed to save workout to cache: $e');
-    }
-  }
-
-  /// Remove workout from cache
-  Future<void> removeWorkout(String workoutId) async {
-    await _ensureInitialized();
-    try {
-      await _workoutsBox.delete(workoutId);
-    } catch (e) {
-      throw Exception('Failed to remove workout from cache: $e');
-    }
-  }
-
-  // ===== CHECK-INS CACHE =====
-
-  /// Save check-ins to cache
-  Future<void> saveCheckIns(List<CheckIn> checkIns) async {
-    await _ensureInitialized();
-    try {
-      await _checkinsBox.clear(); // Clear existing data
-      for (final checkIn in checkIns) {
-        await _checkinsBox.put(checkIn.id, checkIn);
-      }
-      await _updateSyncStatus('checkins', DateTime.now());
-    } catch (e) {
-      throw Exception('Failed to save check-ins to cache: $e');
-    }
-  }
-
-  /// Load check-ins from cache
-  Future<List<CheckIn>> loadCheckIns() async {
-    await _ensureInitialized();
-    try {
-      return _checkinsBox.values.toList();
-    } catch (e) {
-      throw Exception('Failed to load check-ins from cache: $e');
-    }
-  }
-
-  /// Add or update a single check-in in cache
-  Future<void> saveCheckIn(CheckIn checkIn) async {
-    await _ensureInitialized();
-    try {
-      await _checkinsBox.put(checkIn.id, checkIn);
-    } catch (e) {
-      throw Exception('Failed to save check-in to cache: $e');
-    }
-  }
-
-  /// Remove check-in from cache
-  Future<void> removeCheckIn(String checkInId) async {
-    await _ensureInitialized();
-    try {
-      await _checkinsBox.delete(checkInId);
-    } catch (e) {
-      throw Exception('Failed to remove check-in from cache: $e');
-    }
-  }
-
-  // ===== SYNC STATUS =====
-
-  /// Update sync status for a data type
-  Future<void> _updateSyncStatus(String dataType, DateTime lastSync) async {
-    await _ensureInitialized();
-    try {
-      await _syncStatusBox.put('${dataType}_last_sync', lastSync.toIso8601String());
-    } catch (e) {
-      // Don't throw here as sync status is not critical
-      print('Warning: Failed to update sync status: $e');
-    }
-  }
-
-  /// Get last sync time for a data type
-  DateTime? getLastSyncTime(String dataType) {
-    try {
-      final lastSyncStr = _syncStatusBox.get('${dataType}_last_sync') as String?;
-      return lastSyncStr != null ? DateTime.parse(lastSyncStr) : null;
-    } catch (e) {
+      print('CacheService: Failed to get cache for key $key: $e');
       return null;
     }
   }
 
-  /// Clear all cached data
-  Future<void> clearCache() async {
+  /// Clear a specific cache entry.
+  Future<void> clear(String key) async {
     await _ensureInitialized();
     try {
-      await _workoutsBox.clear();
-      await _checkinsBox.clear();
-      await _syncStatusBox.clear();
+      await _box.delete(key);
+      print('CacheService: Cache cleared for key: $key');
     } catch (e) {
-      throw Exception('Failed to clear cache: $e');
+      print('CacheService: Failed to clear cache for key $key: $e');
     }
   }
 
-  // ===== ANALYTICS CACHE =====
-
-  /// Save weekly stats to cache
-  Future<void> saveWeeklyStats(Map<String, dynamic> stats) async {
+  /// Clear all cached data.
+  Future<void> clearAll() async {
     await _ensureInitialized();
     try {
-      await _analyticsBox.put('weekly_stats', stats);
-      await _updateSyncStatus('analytics', DateTime.now());
+      await _box.clear();
+      print('CacheService: All cache cleared');
     } catch (e) {
-      throw Exception('Failed to save weekly stats to cache: $e');
+      print('CacheService: Failed to clear all cache: $e');
     }
   }
 
-  /// Load weekly stats from cache
-  Future<Map<String, dynamic>?> loadWeeklyStats() async {
-    await _ensureInitialized();
-    try {
-      return _analyticsBox.get('weekly_stats') as Map<String, dynamic>?;
-    } catch (e) {
-      throw Exception('Failed to load weekly stats from cache: $e');
-    }
-  }
+  /// Check if cached item is still valid based on TTL.
+  /// [cachedItem] The cached item returned from get()
+  /// [ttlSeconds] Override default TTL (optional)
+  bool isCacheValid(dynamic cachedItem, {int? ttlSeconds}) {
+    if (cachedItem == null || cachedItem is! Map) return false;
 
-  /// Save daily calories data to cache
-  Future<void> saveDailyCalories(Map<String, dynamic> caloriesData) async {
-    await _ensureInitialized();
     try {
-      await _analyticsBox.put('daily_calories', caloriesData);
-      await _updateSyncStatus('analytics', DateTime.now());
-    } catch (e) {
-      throw Exception('Failed to save daily calories to cache: $e');
-    }
-  }
+      final timestamp = cachedItem['timestamp'] as int?;
+      final itemTtl = ttlSeconds ?? (cachedItem['ttl'] as int? ?? 604800);
 
-  /// Load daily calories data from cache
-  Future<Map<String, dynamic>?> loadDailyCalories() async {
-    await _ensureInitialized();
-    try {
-      return _analyticsBox.get('daily_calories') as Map<String, dynamic>?;
-    } catch (e) {
-      throw Exception('Failed to load daily calories from cache: $e');
-    }
-  }
+      if (timestamp == null) return false;
 
-  /// Save workout frequency data to cache
-  Future<void> saveWorkoutFrequency(Map<String, dynamic> frequencyData) async {
-    await _ensureInitialized();
-    try {
-      await _analyticsBox.put('workout_frequency', frequencyData);
-      await _updateSyncStatus('analytics', DateTime.now());
-    } catch (e) {
-      throw Exception('Failed to save workout frequency to cache: $e');
-    }
-  }
+      final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final isValid = now - timestamp < itemTtl;
 
-  /// Load workout frequency data from cache
-  Future<Map<String, dynamic>?> loadWorkoutFrequency() async {
-    await _ensureInitialized();
-    try {
-      final data = _analyticsBox.get('workout_frequency');
-      if (data == null) return null;
-
-      // Handle the case where Hive returns Map<dynamic, dynamic>
-      if (data is Map) {
-        return data.map((key, value) => MapEntry(key.toString(), value));
+      if (!isValid) {
+        print('CacheService: Cache expired for timestamp: $timestamp');
       }
 
-      return data as Map<String, dynamic>?;
+      return isValid;
     } catch (e) {
-      throw Exception('Failed to load workout frequency from cache: $e');
+      print('CacheService: Error validating cache: $e');
+      return false;
     }
   }
 
-  /// Save workout type distribution data to cache
-  Future<void> saveWorkoutTypeDistribution(Map<String, int> distribution) async {
-    await _ensureInitialized();
-    try {
-      await _analyticsBox.put('workout_type_distribution', distribution);
-    } catch (e) {
-      throw Exception('Failed to save workout type distribution to cache: $e');
-    }
-  }
-
-  /// Load workout type distribution data from cache
-  Future<Map<String, int>?> loadWorkoutTypeDistribution() async {
-    await _ensureInitialized();
-    try {
-      final data = _analyticsBox.get('workout_type_distribution');
-      if (data == null) return null;
-
-      // Handle the case where Hive returns Map<dynamic, dynamic>
-      if (data is Map) {
-        return data.map((key, value) => MapEntry(key.toString(), value as int));
-      }
-
-      return data as Map<String, int>?;
-    } catch (e) {
-      throw Exception('Failed to load workout type distribution from cache: $e');
-    }
-  }
-
-  /// Save average session duration data to cache
-  Future<void> saveAverageSessionDuration(Map<String, dynamic> durationData) async {
-    await _ensureInitialized();
-    try {
-      await _analyticsBox.put('average_session_duration', durationData);
-    } catch (e) {
-      throw Exception('Failed to save average session duration to cache: $e');
-    }
-  }
-
-  /// Load average session duration data from cache
-  Future<Map<String, dynamic>?> loadAverageSessionDuration() async {
-    await _ensureInitialized();
-    try {
-      final data = _analyticsBox.get('average_session_duration');
-      if (data == null) return null;
-
-      // Handle the case where Hive returns Map<dynamic, dynamic>
-      if (data is Map) {
-        return data.map((key, value) => MapEntry(key.toString(), value));
-      }
-
-      return data as Map<String, dynamic>?;
-    } catch (e) {
-      throw Exception('Failed to load average session duration from cache: $e');
-    }
-  }
-
-  /// Save calorie burn efficiency data to cache
-  Future<void> saveCalorieBurnEfficiency(Map<String, dynamic> efficiencyData) async {
-    await _ensureInitialized();
-    try {
-      await _analyticsBox.put('calorie_burn_efficiency', efficiencyData);
-    } catch (e) {
-      throw Exception('Failed to save calorie burn efficiency to cache: $e');
-    }
-  }
-
-  /// Load calorie burn efficiency data from cache
-  Future<Map<String, dynamic>?> loadCalorieBurnEfficiency() async {
-    await _ensureInitialized();
-    try {
-      final data = _analyticsBox.get('calorie_burn_efficiency');
-      if (data == null) return null;
-
-      // Handle the case where Hive returns Map<dynamic, dynamic>
-      if (data is Map) {
-        return data.map((key, value) => MapEntry(key.toString(), value));
-      }
-
-      return data as Map<String, dynamic>?;
-    } catch (e) {
-      throw Exception('Failed to load calorie burn efficiency from cache: $e');
-    }
-  }
-
-  /// Get cache statistics
-  Map<String, int> getCacheStats() {
-    return {
-      'workouts': _workoutsBox.length,
-      'checkins': _checkinsBox.length,
-      'analytics': _analyticsBox.length,
-    };
-  }
-
-  /// Save user preferences to cache
-  Future<void> saveUserPreferences(UserPreferences preferences) async {
-    await _ensureInitialized();
-    try {
-      await _analyticsBox.put('user_preferences', preferences.toCache());
-      await _updateSyncStatus('preferences', DateTime.now());
-    } catch (e) {
-      throw Exception('Failed to save user preferences to cache: $e');
-    }
-  }
-
-  /// Load user preferences from cache
-  Future<UserPreferences?> loadUserPreferences() async {
-    await _ensureInitialized();
-    try {
-      final data = _analyticsBox.get('user_preferences');
-      if (data == null) return null;
-
-      // Convert cached data back to UserPreferences
-      // Handle the lastUpdated field which is stored as ISO string
-      final cacheData = Map<String, dynamic>.from(data);
-      if (cacheData['lastUpdated'] is String) {
-        cacheData['lastUpdated'] = DateTime.parse(cacheData['lastUpdated']);
-      }
-
-      return UserPreferences.fromFirestore(cacheData, 'cached');
-    } catch (e) {
-      print('Error loading cached user preferences: $e');
-      return null;
-    }
-  }
-
-  /// Ensure service is initialized
+  /// Ensure the service is initialized, auto-initializing if needed.
   Future<void> _ensureInitialized() async {
     if (!_isInitialized) {
-      await initialize();
+      await init();
     }
   }
 
-  // ===== MEALS CACHE =====
-
-  /// Save meals to cache
-  Future<void> saveMeals(Map<String, Map<String, dynamic>> meals) async {
-    await _ensureInitialized();
-    try {
-      await _mealsBox.clear();
-      await _mealsBox.putAll(meals);
-    } catch (e) {
-      throw Exception('Failed to save meals to cache: $e');
-    }
-  }
-
-  /// Get cached meals
-  Future<Map<String, Map<String, dynamic>>> getCachedMeals() async {
-    await _ensureInitialized();
-    try {
-      final meals = <String, Map<String, dynamic>>{};
-      for (final key in _mealsBox.keys) {
-        final data = _mealsBox.get(key);
-        if (data != null) {
-          meals[key.toString()] = Map<String, dynamic>.from(data);
-        }
-      }
-      return meals;
-    } catch (e) {
-      print('Error getting cached meals: $e');
-      return {};
-    }
-  }
-
-  // ===== FOOD ITEMS CACHE =====
-
-  /// Save food items to cache
-  Future<void> saveFoodItems(Map<String, Map<String, dynamic>> foodItems) async {
-    await _ensureInitialized();
-    try {
-      await _foodItemsBox.clear();
-      await _foodItemsBox.putAll(foodItems);
-    } catch (e) {
-      throw Exception('Failed to save food items to cache: $e');
-    }
-  }
-
-  /// Get cached food items
-  Future<Map<String, Map<String, dynamic>>> getCachedFoodItems() async {
-    await _ensureInitialized();
-    try {
-      final foodItems = <String, Map<String, dynamic>>{};
-      for (final key in _foodItemsBox.keys) {
-        final data = _foodItemsBox.get(key);
-        if (data != null) {
-          foodItems[key.toString()] = Map<String, dynamic>.from(data);
-        }
-      }
-      return foodItems;
-    } catch (e) {
-      print('Error getting cached food items: $e');
-      return {};
-    }
-  }
-
-  /// Generic save data method for wearable sync service
-  Future<void> saveData(String key, Map<String, dynamic> data) async {
-    await _ensureInitialized();
-    try {
-      await _analyticsBox.put(key, data);
-    } catch (e) {
-      throw Exception('Failed to save data to cache: $e');
-    }
-  }
-
-  /// Generic load data method for wearable sync service
-  Future<Map<String, dynamic>?> loadData(String key) async {
-    await _ensureInitialized();
-    try {
-      final data = _analyticsBox.get(key);
-      if (data == null) return null;
-
-      // Handle the case where Hive returns Map<dynamic, dynamic>
-      if (data is Map) {
-        return data.map((key, value) => MapEntry(key.toString(), value));
-      }
-
-      return data as Map<String, dynamic>?;
-    } catch (e) {
-      throw Exception('Failed to load data from cache: $e');
-    }
-  }
-
-  /// Close all boxes (call when app is terminating)
+  /// Close the cache box (call on app termination).
   Future<void> close() async {
     if (_isInitialized) {
-      await _workoutsBox.close();
-      await _checkinsBox.close();
-      await _syncStatusBox.close();
-      await _analyticsBox.close();
+      await _box.close();
       _isInitialized = false;
     }
   }
-}
 
-// ===== HIVE ADAPTERS =====
+  // ===== BACKWARD COMPATIBILITY METHODS =====
+  // These methods maintain compatibility with existing services
 
-class WorkoutAdapter extends TypeAdapter<Workout> {
-  @override
-  final int typeId = 0;
+  /// Save workouts to cache (backward compatibility)
+  Future<void> saveWorkouts(List<dynamic> workouts) async {
+    await _ensureInitialized();
+    try {
+      await _box.put('workouts', {
+        'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        'data': workouts,
+        'ttl': 604800, // 7 days
+      });
+    } catch (e) {
+      print('CacheService: Failed to save workouts: $e');
+    }
+  }
 
-  @override
-  Workout read(BinaryReader reader) {
-    final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
+  /// Load workouts from cache (backward compatibility)
+  Future<List<dynamic>> loadWorkouts() async {
+    await _ensureInitialized();
+    try {
+      final cachedItem = _box.get('workouts');
+      if (cachedItem != null && isCacheValid(cachedItem)) {
+        return cachedItem['data'] as List<dynamic>;
+      }
+      return [];
+    } catch (e) {
+      print('CacheService: Failed to load workouts: $e');
+      return [];
+    }
+  }
+
+  /// Save a single workout (backward compatibility)
+  Future<void> saveWorkout(dynamic workout) async {
+    await _ensureInitialized();
+    try {
+      await _box.put('workout_${workout.id}', {
+        'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        'data': workout,
+        'ttl': 604800,
+      });
+    } catch (e) {
+      print('CacheService: Failed to save workout: $e');
+    }
+  }
+
+  /// Remove workout from cache (backward compatibility)
+  Future<void> removeWorkout(String workoutId) async {
+    await _ensureInitialized();
+    try {
+      await _box.delete('workout_$workoutId');
+    } catch (e) {
+      print('CacheService: Failed to remove workout: $e');
+    }
+  }
+
+  /// Save check-ins to cache (backward compatibility)
+  Future<void> saveCheckIns(List<dynamic> checkIns) async {
+    await _ensureInitialized();
+    try {
+      await _box.put('checkins', {
+        'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        'data': checkIns,
+        'ttl': 604800,
+      });
+    } catch (e) {
+      print('CacheService: Failed to save checkins: $e');
+    }
+  }
+
+  /// Load check-ins from cache (backward compatibility)
+  Future<List<dynamic>> loadCheckIns() async {
+    await _ensureInitialized();
+    try {
+      final cachedItem = _box.get('checkins');
+      if (cachedItem != null && isCacheValid(cachedItem)) {
+        return cachedItem['data'] as List<dynamic>;
+      }
+      return [];
+    } catch (e) {
+      print('CacheService: Failed to load checkins: $e');
+      return [];
+    }
+  }
+
+  /// Save a single check-in (backward compatibility)
+  Future<void> saveCheckIn(dynamic checkIn) async {
+    await _ensureInitialized();
+    try {
+      await _box.put('checkin_${checkIn.id}', {
+        'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        'data': checkIn,
+        'ttl': 604800,
+      });
+    } catch (e) {
+      print('CacheService: Failed to save checkin: $e');
+    }
+  }
+
+  /// Remove check-in from cache (backward compatibility)
+  Future<void> removeCheckIn(String checkInId) async {
+    await _ensureInitialized();
+    try {
+      await _box.delete('checkin_$checkInId');
+    } catch (e) {
+      print('CacheService: Failed to remove checkin: $e');
+    }
+  }
+
+  /// Save weekly stats (backward compatibility)
+  Future<void> saveWeeklyStats(Map<String, dynamic> stats) async {
+    await save('weekly_stats', stats);
+  }
+
+  /// Load weekly stats (backward compatibility)
+  Future<Map<String, dynamic>?> loadWeeklyStats() async {
+    final data = await get('weekly_stats');
+    return data != null ? data['data'] as Map<String, dynamic>? : null;
+  }
+
+  /// Save daily calories (backward compatibility)
+  Future<void> saveDailyCalories(Map<String, dynamic> caloriesData) async {
+    await save('daily_calories', caloriesData);
+  }
+
+  /// Load daily calories (backward compatibility)
+  Future<Map<String, dynamic>?> loadDailyCalories() async {
+    final data = await get('daily_calories');
+    return data != null ? data['data'] as Map<String, dynamic>? : null;
+  }
+
+  /// Save workout frequency (backward compatibility)
+  Future<void> saveWorkoutFrequency(Map<String, dynamic> frequencyData) async {
+    await save('workout_frequency', frequencyData);
+  }
+
+  /// Load workout frequency (backward compatibility)
+  Future<Map<String, dynamic>?> loadWorkoutFrequency() async {
+    final data = await get('workout_frequency');
+    return data != null ? data['data'] as Map<String, dynamic>? : null;
+  }
+
+  /// Save workout type distribution (backward compatibility)
+  Future<void> saveWorkoutTypeDistribution(Map<String, int> distribution) async {
+    await save('workout_type_distribution', distribution);
+  }
+
+  /// Load workout type distribution (backward compatibility)
+  Future<Map<String, int>?> loadWorkoutTypeDistribution() async {
+    final data = await get('workout_type_distribution');
+    return data != null ? data['data'] as Map<String, int>? : null;
+  }
+
+  /// Save average session duration (backward compatibility)
+  Future<void> saveAverageSessionDuration(Map<String, dynamic> durationData) async {
+    await save('average_session_duration', durationData);
+  }
+
+  /// Load average session duration (backward compatibility)
+  Future<Map<String, dynamic>?> loadAverageSessionDuration() async {
+    final data = await get('average_session_duration');
+    return data != null ? data['data'] as Map<String, dynamic>? : null;
+  }
+
+  /// Save calorie burn efficiency (backward compatibility)
+  Future<void> saveCalorieBurnEfficiency(Map<String, dynamic> efficiencyData) async {
+    await save('calorie_burn_efficiency', efficiencyData);
+  }
+
+  /// Load calorie burn efficiency (backward compatibility)
+  Future<Map<String, dynamic>?> loadCalorieBurnEfficiency() async {
+    final data = await get('calorie_burn_efficiency');
+    return data != null ? data['data'] as Map<String, dynamic>? : null;
+  }
+
+  /// Save user preferences (backward compatibility)
+  Future<void> saveUserPreferences(dynamic preferences) async {
+    await save('user_preferences', preferences.toCache());
+  }
+
+  /// Load user preferences (backward compatibility)
+  Future<dynamic?> loadUserPreferences() async {
+    final data = await get('user_preferences');
+    if (data != null) {
+      final cacheData = Map<String, dynamic>.from(data['data']);
+      if (cacheData['lastUpdated'] is String) {
+        cacheData['lastUpdated'] = DateTime.parse(cacheData['lastUpdated']);
+      }
+      return UserPreferences.fromFirestore(cacheData, 'cached');
+    }
+    return null;
+  }
+
+  /// Save meals (backward compatibility)
+  Future<void> saveMeals(Map<String, Map<String, dynamic>> meals) async {
+    await save('meals', meals);
+  }
+
+  /// Get cached meals (backward compatibility)
+  Future<Map<String, Map<String, dynamic>>> getCachedMeals() async {
+    final data = await get('meals');
+    return data != null ? data['data'] as Map<String, Map<String, dynamic>> : {};
+  }
+
+  /// Save food items (backward compatibility)
+  Future<void> saveFoodItems(Map<String, Map<String, dynamic>> foodItems) async {
+    await save('food_items', foodItems);
+  }
+
+  /// Get cached food items (backward compatibility)
+  Future<Map<String, Map<String, dynamic>>> getCachedFoodItems() async {
+    final data = await get('food_items');
+    return data != null ? data['data'] as Map<String, Map<String, dynamic>> : {};
+  }
+
+  /// Generic save data (backward compatibility)
+  Future<void> saveData(String key, Map<String, dynamic> data) async {
+    await save(key, data);
+  }
+
+  /// Generic load data (backward compatibility)
+  Future<Map<String, dynamic>?> loadData(String key) async {
+    final data = await get(key);
+    return data != null ? data['data'] as Map<String, dynamic>? : null;
+  }
+
+  /// Clear all cached data (backward compatibility)
+  Future<void> clearCache() async {
+    await clearAll();
+  }
+
+  /// Get last sync time (backward compatibility)
+  DateTime? getLastSyncTime(String dataType) {
+    try {
+      final data = _box.get('${dataType}_last_sync');
+      return data != null ? DateTime.parse(data as String) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Update sync status (backward compatibility)
+  Future<void> _updateSyncStatus(String dataType, DateTime lastSync) async {
+    await _ensureInitialized();
+    try {
+      await _box.put('${dataType}_last_sync', lastSync.toIso8601String());
+    } catch (e) {
+      print('CacheService: Failed to update sync status: $e');
+    }
+  }
+
+  /// Get cache statistics (backward compatibility)
+  Map<String, int> getCacheStats() {
+    return {
+      'workouts': _box.containsKey('workouts') ? 1 : 0,
+      'checkins': _box.containsKey('checkins') ? 1 : 0,
+      'analytics': _box.keys.where((key) => key.startsWith('analytics_')).length,
     };
-
-    return Workout(
-      id: fields[0] as String,
-      userId: fields[1] as String,
-      exerciseName: fields[2] as String,
-      sets: fields[3] as int,
-      reps: fields[4] as int,
-      duration: fields[5] as int?,
-      weight: fields[6] as double?,
-      notes: fields[7] as String?,
-      createdAt: DateTime.parse(fields[8] as String),
-      updatedAt: fields[9] != null ? DateTime.parse(fields[9] as String) : null,
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, Workout obj) {
-    writer
-      ..writeByte(10) // Number of fields
-      ..writeByte(0)
-      ..write(obj.id)
-      ..writeByte(1)
-      ..write(obj.userId)
-      ..writeByte(2)
-      ..write(obj.exerciseName)
-      ..writeByte(3)
-      ..write(obj.sets)
-      ..writeByte(4)
-      ..write(obj.reps)
-      ..writeByte(5)
-      ..write(obj.duration)
-      ..writeByte(6)
-      ..write(obj.weight)
-      ..writeByte(7)
-      ..write(obj.notes)
-      ..writeByte(8)
-      ..write(obj.createdAt.toIso8601String())
-      ..writeByte(9)
-      ..write(obj.updatedAt?.toIso8601String());
-  }
-}
-
-class CheckInAdapter extends TypeAdapter<CheckIn> {
-  @override
-  final int typeId = 1;
-
-  @override
-  CheckIn read(BinaryReader reader) {
-    final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
-
-    return CheckIn(
-      id: fields[0] as String,
-      userId: fields[1] as String,
-      date: DateTime.parse(fields[2] as String),
-      weight: fields[3] as double,
-      mood: fields[4] as String,
-      energyLevel: fields[5] as int,
-      notes: fields[6] as String?,
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, CheckIn obj) {
-    writer
-      ..writeByte(7) // Number of fields
-      ..writeByte(0)
-      ..write(obj.id)
-      ..writeByte(1)
-      ..write(obj.userId)
-      ..writeByte(2)
-      ..write(obj.date.toIso8601String())
-      ..writeByte(3)
-      ..write(obj.weight)
-      ..writeByte(4)
-      ..write(obj.mood)
-      ..writeByte(5)
-      ..write(obj.energyLevel)
-      ..writeByte(6)
-      ..write(obj.notes);
   }
 }

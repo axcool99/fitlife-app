@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:get_it/get_it.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'ui/components/components.dart';
+import 'ui/dialogs/exercise_choice_dialog.dart';
 import 'services/workout_service.dart';
 import 'services/ai_service.dart';
-import 'services/cache_service.dart';
 import 'services/sync_service.dart';
 import 'services/network_service.dart';
 import 'models/workout.dart';
+import 'models/exercise.dart';
 import 'main.dart'; // Import for getIt
 
 class WorkoutScreen extends StatefulWidget {
@@ -32,7 +31,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   final WorkoutService _workoutService = getIt<WorkoutService>();
   final NetworkService _networkService = getIt<NetworkService>();
   final SyncService _syncService = getIt<SyncService>();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isOnline = true; // Track online status
 
@@ -87,11 +85,36 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     }
   }
 
-  void _addExercise() {
-    showDialog(
-      context: context,
-      builder: (context) => AddWorkoutDialog(),
-    );
+  void _addExercise() async {
+    final choice = await ExerciseChoiceDialog.show(context);
+
+    if (choice == null || !mounted) return;
+
+    switch (choice) {
+      case ExerciseChoice.quickAdd:
+        // Show manual entry dialog
+        showDialog(
+          context: context,
+          builder: (context) => const AddWorkoutDialog(),
+        );
+        break;
+
+      case ExerciseChoice.browseExercises:
+        // Show exercise picker (current flow)
+        final selectedExercise = await ExercisePickerDialog.show(context);
+
+        if (selectedExercise != null && mounted) {
+          // Create a workout suggestion from the selected exercise
+          final suggestion = _createWorkoutSuggestionFromExercise(selectedExercise);
+
+          // Show the add workout dialog with the suggestion
+          showDialog(
+            context: context,
+            builder: (context) => AddWorkoutDialog(suggestion: suggestion),
+          );
+        }
+        break;
+    }
   }
 
   void _showAddWorkoutDialog(WorkoutSuggestion? suggestion) {
@@ -99,6 +122,79 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       context: context,
       builder: (context) => AddWorkoutDialog(suggestion: suggestion),
     );
+  }
+
+  /// Create a workout suggestion from a selected exercise
+  WorkoutSuggestion _createWorkoutSuggestionFromExercise(Exercise exercise) {
+    // Determine suggested sets and reps based on exercise type
+    int suggestedSets;
+    int suggestedReps;
+
+    // Body part based suggestions
+    switch (exercise.bodyPart) {
+      case 'upper_arms':
+      case 'shoulders':
+        suggestedSets = 4;
+        suggestedReps = 12;
+        break;
+      case 'chest':
+      case 'back':
+        suggestedSets = 4;
+        suggestedReps = 10;
+        break;
+      case 'upper_legs':
+      case 'lower_legs':
+        suggestedSets = 4;
+        suggestedReps = 12;
+        break;
+      case 'waist':
+      case 'core':
+        suggestedSets = 3;
+        suggestedReps = 15;
+        break;
+      case 'cardio':
+        suggestedSets = 1;
+        suggestedReps = 30; // seconds
+        break;
+      default:
+        suggestedSets = 3;
+        suggestedReps = 12;
+    }
+
+    // Equipment-based adjustments
+    if (exercise.equipment == 'body_weight') {
+      suggestedReps += 2; // Slightly higher reps for bodyweight exercises
+    }
+
+    return WorkoutSuggestion(
+      exerciseName: exercise.displayName,
+      reason: 'Selected from exercise database - ${exercise.bodyPartDisplay} exercise targeting ${exercise.targetDisplay}',
+      category: exercise.bodyPart,
+      suggestedSets: suggestedSets,
+      suggestedReps: suggestedReps,
+      estimatedDifficulty: _getDifficultyFromExercise(exercise),
+      expectedBenefits: [
+        'Targets ${exercise.targetDisplay}',
+        'Works ${exercise.allMuscles.join(", ")}',
+        if (exercise.equipment != 'body_weight') 'Requires ${exercise.equipmentDisplay}',
+      ],
+      progressionType: 'reps',
+      confidenceScore: 0.8,
+      requiresEquipment: exercise.equipment != 'body_weight',
+    );
+  }
+
+  /// Get difficulty level from exercise
+  int _getDifficultyFromExercise(Exercise exercise) {
+    // Simple heuristic based on equipment and body part
+    if (exercise.equipment == 'body_weight') {
+      return 2; // Beginner to intermediate
+    } else if (exercise.equipment.contains('dumbbell') ||
+               exercise.equipment.contains('barbell')) {
+      return 3; // Intermediate
+    } else {
+      return 4; // Advanced
+    }
   }
 
   IconData _getExerciseIcon(String exerciseName) {

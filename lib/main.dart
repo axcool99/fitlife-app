@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get_it/get_it.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
@@ -26,45 +27,93 @@ import 'services/gamification_service.dart'; // Import gamification service
 import 'services/nutrition_service.dart'; // Import nutrition service
 import 'services/health_service.dart'; // Import health service
 import 'services/wearable_sync_service.dart'; // Import wearable sync service
+import 'services/exercise_service.dart'; // Import exercise service
 import 'device_connection_screen.dart'; // Import device connection screen
 import 'nutrition_screen.dart'; // Import nutrition screen
 
 /// Global service locator instance
 final getIt = GetIt.instance;
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+/// Setup all dependencies for the app
+Future<void> setupDependencies() async {
+  try {
+    // Load environment variables
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    print('Warning: Failed to load .env file: $e');
+    // Continue with app startup - API keys might be handled differently in production
+  }
+
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Initialize and register services with dependency injection
+  // Register CacheService as a singleton
+  final cacheService = CacheService();
+  try {
+    await cacheService.init();
+  } catch (e) {
+    print('Warning: Failed to initialize cache service: $e');
+    // Continue without cache - app can still function
+  }
+  getIt.registerSingleton<CacheService>(cacheService);
+
+  // Register NetworkService
   final networkService = NetworkService();
-  final cacheService = CacheService(networkService);
-  await cacheService.initialize();
+  getIt.registerSingleton<NetworkService>(networkService);
 
   // Initialize health services
   final healthService = HealthService();
   final wearableSyncService = WearableSyncService(healthService, cacheService, networkService);
 
-  getIt.registerSingleton<NetworkService>(networkService);
-  getIt.registerSingleton<CacheService>(cacheService);
   getIt.registerSingleton<HealthService>(healthService);
   getIt.registerSingleton<WearableSyncService>(wearableSyncService);
   getIt.registerSingleton<FitnessDataService>(FitnessDataService(wearableSyncService));
-  getIt.registerSingleton<WorkoutService>(WorkoutService(getIt<CacheService>(), getIt<FitnessDataService>()));
-  getIt.registerSingleton<CheckInService>(CheckInService(getIt<CacheService>()));
-  getIt.registerSingleton<ProfileService>(ProfileService());
-  getIt.registerSingleton<UserPreferencesService>(UserPreferencesService(getIt<CacheService>()));
-  getIt.registerSingleton<AnalyticsService>(AnalyticsService(getIt<CacheService>(), getIt<NetworkService>()));
-  getIt.registerSingleton<AIService>(AIService(getIt<AnalyticsService>(), getIt<ProfileService>(), getIt<UserPreferencesService>()));
-  getIt.registerSingleton<GamificationService>(GamificationService(getIt<AnalyticsService>()));
-  getIt.registerSingleton<NutritionService>(NutritionService(getIt<CacheService>(), getIt<NetworkService>()));
-  getIt.registerSingleton<SyncService>(SyncService(
-    getIt<CacheService>(),
-    getIt<WorkoutService>(),
-    getIt<CheckInService>(),
-  ));
+
+  // Register other services
+  getIt.registerLazySingleton<WorkoutService>(
+    () => WorkoutService(getIt<CacheService>(), getIt<FitnessDataService>()),
+  );
+  getIt.registerLazySingleton<CheckInService>(
+    () => CheckInService(getIt<CacheService>()),
+  );
+  getIt.registerLazySingleton<ProfileService>(() => ProfileService());
+  getIt.registerLazySingleton<UserPreferencesService>(
+    () => UserPreferencesService(getIt<CacheService>()),
+  );
+  getIt.registerLazySingleton<AnalyticsService>(
+    () => AnalyticsService(getIt<CacheService>(), getIt<NetworkService>()),
+  );
+  getIt.registerLazySingleton<AIService>(
+    () => AIService(
+      getIt<AnalyticsService>(),
+      getIt<ProfileService>(),
+      getIt<UserPreferencesService>(),
+    ),
+  );
+  getIt.registerLazySingleton<GamificationService>(
+    () => GamificationService(getIt<AnalyticsService>()),
+  );
+  getIt.registerLazySingleton<NutritionService>(
+    () => NutritionService(getIt<CacheService>(), getIt<NetworkService>()),
+  );
+
+  // Register ExerciseService with dependencies
+  getIt.registerLazySingleton<ExerciseService>(
+    () => ExerciseService(
+      cacheService: getIt<CacheService>(),
+      networkService: getIt<NetworkService>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<SyncService>(
+    () => SyncService(
+      getIt<CacheService>(),
+      getIt<WorkoutService>(),
+      getIt<CheckInService>(),
+    ),
+  );
 
   // Request health permissions after services are initialized
   try {
@@ -79,6 +128,22 @@ void main() async {
   } catch (e) {
     print('Failed to start background sync: $e');
   }
+}
+
+/// Reset all dependencies (useful for logout or profile switching)
+Future<void> resetDependencies() async {
+  // Clear existing registrations
+  await getIt.reset();
+
+  // Re-setup dependencies
+  await setupDependencies();
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Setup all dependencies
+  await setupDependencies();
 
   runApp(const MyApp());
 }

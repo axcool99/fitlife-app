@@ -6,6 +6,7 @@ export 'checkin.dart';
 export 'badge.dart';
 export 'streak.dart';
 export '../services/fitness_data_service.dart' show FitnessData;
+export 'exercise.dart';
 
 /// Profile - User profile data model
 class Profile {
