@@ -1,16 +1,20 @@
+import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/workout.dart';
+import '../models/models.dart';
 import 'cache_service.dart';
 import 'network_service.dart';
+import 'wearable_sync_service.dart';
 
 class AnalyticsService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final CacheService _cacheService;
   final NetworkService _networkService;
+  final WearableSyncService? _wearableSyncService;
 
-  AnalyticsService(this._cacheService, this._networkService);
+  AnalyticsService(this._cacheService, this._networkService, [this._wearableSyncService]);
 
   String? get currentUserId => _auth.currentUser?.uid;
 
@@ -438,6 +442,201 @@ class AnalyticsService {
       }
       return emptyData;
     }
+  }
+
+  /// Get health data for a specific date
+  Future<HealthData?> getHealthData(DateTime date) async {
+    if (_wearableSyncService == null) return null;
+    return _wearableSyncService!.getHealthData(date);
+  }
+
+  /// Get health data for a date range
+  Future<List<HealthData>> getHealthDataRange(DateTime startDate, DateTime endDate) async {
+    if (_wearableSyncService == null) return [];
+    return _wearableSyncService!.getHealthDataRange(startDate, endDate);
+  }
+
+  /// Calculate average resting heart rate over a period
+  Future<double?> getAverageRestingHeartRate(DateTime startDate, DateTime endDate) async {
+    try {
+      final healthDataList = await getHealthDataRange(startDate, endDate);
+      final validReadings = healthDataList
+          .where((data) => data.restingHeartRate != null && data.restingHeartRate! > 0)
+          .map((data) => data.restingHeartRate!)
+          .toList();
+
+      if (validReadings.isEmpty) return null;
+
+      return validReadings.reduce((a, b) => a + b) / validReadings.length;
+    } catch (e) {
+      print('Error calculating average resting heart rate: $e');
+      return null;
+    }
+  }
+
+  /// Calculate average sleep duration over a period
+  Future<Duration?> getAverageSleepDuration(DateTime startDate, DateTime endDate) async {
+    try {
+      final healthDataList = await getHealthDataRange(startDate, endDate);
+      final validSleepData = healthDataList
+          .where((data) => data.sleepData != null)
+          .map((data) => data.sleepData!.totalSleep)
+          .toList();
+
+      if (validSleepData.isEmpty) return null;
+
+      final totalSleep = validSleepData.reduce((a, b) => a + b);
+      return Duration(seconds: totalSleep.inSeconds ~/ validSleepData.length);
+    } catch (e) {
+      print('Error calculating average sleep duration: $e');
+      return null;
+    }
+  }
+
+  /// Get sleep quality trend over time
+  Future<List<Map<String, dynamic>>> getSleepQualityTrend(DateTime startDate, DateTime endDate) async {
+    try {
+      final healthDataList = await getHealthDataRange(startDate, endDate);
+      return healthDataList
+          .where((data) => data.sleepData != null)
+          .map((data) => {
+                'date': data.date,
+                'sleepQuality': data.sleepData!.sleepQualityRating,
+                'totalSleep': data.sleepData!.totalSleep.inMinutes,
+                'deepSleep': data.sleepData!.deepSleep.inMinutes,
+                'efficiency': data.sleepData!.sleepEfficiency,
+              })
+          .toList();
+    } catch (e) {
+      print('Error getting sleep quality trend: $e');
+      return [];
+    }
+  }
+
+  /// Calculate heart rate variability (simplified)
+  Future<double?> getHeartRateVariability(DateTime date) async {
+    try {
+      final healthData = await getHealthData(date);
+      if (healthData == null || healthData.heartRatePoints.isEmpty) return null;
+
+      final heartRates = healthData.heartRatePoints.map((point) => point.heartRate).toList();
+      if (heartRates.length < 2) return null;
+
+      // Calculate standard deviation as a simple HRV measure
+      final mean = heartRates.reduce((a, b) => a + b) / heartRates.length;
+      final variance = heartRates.map((hr) => (hr - mean) * (hr - mean)).reduce((a, b) => a + b) / heartRates.length;
+      return variance; // Return variance as HRV measure
+    } catch (e) {
+      print('Error calculating heart rate variability: $e');
+      return null;
+    }
+  }
+
+  /// Get workout heart rate analysis
+  Future<Map<String, dynamic>?> getWorkoutHeartRateAnalysis(String workoutId) async {
+    try {
+      // This would need to be implemented to fetch workout data with heart rate
+      // For now, return null as this requires additional implementation
+      return null;
+    } catch (e) {
+      print('Error getting workout heart rate analysis: $e');
+      return null;
+    }
+  }
+
+  /// Get comprehensive health insights
+  Future<Map<String, dynamic>> getHealthInsights(DateTime startDate, DateTime endDate) async {
+    try {
+      final healthDataList = await getHealthDataRange(startDate, endDate);
+
+      if (healthDataList.isEmpty) {
+        return {'hasData': false, 'message': 'No health data available for the selected period'};
+      }
+
+      final insights = <String, dynamic>{
+        'hasData': true,
+        'period': {
+          'startDate': startDate,
+          'endDate': endDate,
+          'days': endDate.difference(startDate).inDays + 1,
+        },
+        'metrics': <String, dynamic>{},
+      };
+
+      // Calculate averages and trends
+      final avgRestingHR = await getAverageRestingHeartRate(startDate, endDate);
+      final avgSleepDuration = await getAverageSleepDuration(startDate, endDate);
+
+      insights['metrics']['averageRestingHeartRate'] = avgRestingHR;
+      insights['metrics']['averageSleepDuration'] = avgSleepDuration?.inMinutes;
+
+      // Calculate consistency scores
+      final restingHRConsistency = _calculateConsistencyScore(
+        healthDataList.map((d) => d.restingHeartRate ?? 0.0).where((hr) => hr > 0).toList()
+      );
+
+      final sleepConsistency = _calculateConsistencyScore(
+        healthDataList
+            .where((d) => d.sleepData != null)
+            .map((d) => d.sleepData!.totalSleep.inMinutes.toDouble())
+            .toList()
+      );
+
+      insights['metrics']['restingHeartRateConsistency'] = restingHRConsistency;
+      insights['metrics']['sleepConsistency'] = sleepConsistency;
+
+      // Generate recommendations based on data
+      insights['recommendations'] = _generateHealthRecommendations(insights);
+
+      return insights;
+    } catch (e) {
+      print('Error getting health insights: $e');
+      return {'hasData': false, 'error': e.toString()};
+    }
+  }
+
+  /// Calculate consistency score (0-100, higher is more consistent)
+  double _calculateConsistencyScore(List<double> values) {
+    if (values.length < 2) return 0.0;
+
+    final mean = values.reduce((a, b) => a + b) / values.length;
+    final stdDev = _calculateStandardDeviation(values, mean);
+
+    // Convert to consistency score (lower std dev = higher consistency)
+    final coefficientOfVariation = mean > 0 ? (stdDev / mean) : 0.0;
+    return (1.0 - coefficientOfVariation.clamp(0.0, 1.0)) * 100.0;
+  }
+
+  /// Calculate standard deviation
+  double _calculateStandardDeviation(List<double> values, double mean) {
+    if (values.length <= 1) return 0.0;
+
+    final variance = values.map((v) => (v - mean) * (v - mean)).reduce((a, b) => a + b) / (values.length - 1);
+    return math.sqrt(variance);
+  }
+
+  /// Generate health recommendations based on insights
+  List<String> _generateHealthRecommendations(Map<String, dynamic> insights) {
+    final recommendations = <String>[];
+
+    final metrics = insights['metrics'] as Map<String, dynamic>;
+
+    final restingHRConsistency = metrics['restingHeartRateConsistency'] as double? ?? 0.0;
+    final sleepConsistency = metrics['sleepConsistency'] as double? ?? 0.0;
+
+    if (restingHRConsistency < 70) {
+      recommendations.add('Your resting heart rate varies significantly. Consider establishing a more consistent sleep schedule.');
+    }
+
+    if (sleepConsistency < 70) {
+      recommendations.add('Your sleep duration is inconsistent. Aim for 7-9 hours of sleep per night.');
+    }
+
+    if (recommendations.isEmpty) {
+      recommendations.add('Your health metrics show good consistency. Keep up the great work!');
+    }
+
+    return recommendations;
   }
 }
 

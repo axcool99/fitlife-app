@@ -1324,3 +1324,355 @@ class RecipeIngredient {
     );
   }
 }
+
+/// Health Data Models for Wearable Integration
+
+/// HeartRatePoint - Individual heart rate measurement
+class HeartRatePoint {
+  final DateTime timestamp;
+  final double heartRate; // BPM
+  final String? zone; // 'fat-burn', 'cardio', 'peak', etc.
+
+  const HeartRatePoint({
+    required this.timestamp,
+    required this.heartRate,
+    this.zone,
+  });
+
+  // Convert to Firestore format
+  Map<String, dynamic> toFirestore() {
+    return {
+      'timestamp': timestamp,
+      'heartRate': heartRate,
+      'zone': zone,
+    };
+  }
+
+  // Create from Firestore document
+  factory HeartRatePoint.fromFirestore(Map<String, dynamic> data) {
+    return HeartRatePoint(
+      timestamp: data['timestamp'] is Timestamp
+          ? (data['timestamp'] as Timestamp).toDate()
+          : DateTime.parse(data['timestamp']),
+      heartRate: data['heartRate']?.toDouble() ?? 0.0,
+      zone: data['zone'],
+    );
+  }
+
+  // Get heart rate zone based on age and resting HR
+  String getHeartRateZone(int? age, double? restingHeartRate) {
+    if (age == null || restingHeartRate == null) return 'unknown';
+
+    final maxHR = 220 - age;
+    final reserve = maxHR - restingHeartRate;
+
+    final percentage = ((heartRate - restingHeartRate) / reserve) * 100;
+
+    if (percentage < 50) return 'warm-up';
+    if (percentage < 60) return 'fat-burn';
+    if (percentage < 70) return 'aerobic';
+    if (percentage < 80) return 'anaerobic';
+    if (percentage < 90) return 'maximum';
+    return 'peak';
+  }
+}
+
+/// HeartRateZone - Summary of time spent in each heart rate zone
+class HeartRateZone {
+  final String zone;
+  final Duration duration;
+  final double percentage; // Percentage of total workout time
+
+  const HeartRateZone({
+    required this.zone,
+    required this.duration,
+    required this.percentage,
+  });
+
+  // Convert to Firestore format
+  Map<String, dynamic> toFirestore() {
+    return {
+      'zone': zone,
+      'durationMinutes': duration.inMinutes,
+      'percentage': percentage,
+    };
+  }
+
+  // Create from Firestore document
+  factory HeartRateZone.fromFirestore(Map<String, dynamic> data) {
+    return HeartRateZone(
+      zone: data['zone'] ?? 'unknown',
+      duration: Duration(minutes: data['durationMinutes'] ?? 0),
+      percentage: data['percentage']?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+/// SleepData - Sleep quality and duration information
+class SleepData {
+  final DateTime date;
+  final Duration totalSleep; // Total sleep duration
+  final Duration deepSleep; // Deep sleep duration
+  final Duration remSleep; // REM sleep duration
+  final Duration lightSleep; // Light sleep duration
+  final Duration awakeTime; // Time awake during sleep period
+  final int sleepEfficiency; // Percentage (0-100)
+  final DateTime? bedTime; // When user went to bed
+  final DateTime? wakeTime; // When user woke up
+
+  const SleepData({
+    required this.date,
+    required this.totalSleep,
+    required this.deepSleep,
+    required this.remSleep,
+    required this.lightSleep,
+    required this.awakeTime,
+    required this.sleepEfficiency,
+    this.bedTime,
+    this.wakeTime,
+  });
+
+  // Convert to Firestore format
+  Map<String, dynamic> toFirestore() {
+    return {
+      'date': date,
+      'totalSleepMinutes': totalSleep.inMinutes,
+      'deepSleepMinutes': deepSleep.inMinutes,
+      'remSleepMinutes': remSleep.inMinutes,
+      'lightSleepMinutes': lightSleep.inMinutes,
+      'awakeTimeMinutes': awakeTime.inMinutes,
+      'sleepEfficiency': sleepEfficiency,
+      'bedTime': bedTime,
+      'wakeTime': wakeTime,
+    };
+  }
+
+  // Create from Firestore document
+  factory SleepData.fromFirestore(Map<String, dynamic> data) {
+    return SleepData(
+      date: data['date'] is Timestamp
+          ? (data['date'] as Timestamp).toDate()
+          : DateTime.parse(data['date']),
+      totalSleep: Duration(minutes: data['totalSleepMinutes'] ?? 0),
+      deepSleep: Duration(minutes: data['deepSleepMinutes'] ?? 0),
+      remSleep: Duration(minutes: data['remSleepMinutes'] ?? 0),
+      lightSleep: Duration(minutes: data['lightSleepMinutes'] ?? 0),
+      awakeTime: Duration(minutes: data['awakeTimeMinutes'] ?? 0),
+      sleepEfficiency: data['sleepEfficiency'] ?? 0,
+      bedTime: data['bedTime'] is Timestamp
+          ? (data['bedTime'] as Timestamp).toDate()
+          : data['bedTime'] != null ? DateTime.parse(data['bedTime']) : null,
+      wakeTime: data['wakeTime'] is Timestamp
+          ? (data['wakeTime'] as Timestamp).toDate()
+          : data['wakeTime'] != null ? DateTime.parse(data['wakeTime']) : null,
+    );
+  }
+
+  // Get sleep quality rating (1-5 scale)
+  int get sleepQualityRating {
+    if (sleepEfficiency >= 85 && deepSleep.inMinutes >= 90) return 5;
+    if (sleepEfficiency >= 75 && deepSleep.inMinutes >= 60) return 4;
+    if (sleepEfficiency >= 65 && deepSleep.inMinutes >= 30) return 3;
+    if (sleepEfficiency >= 55) return 2;
+    return 1;
+  }
+
+  // Get formatted sleep duration
+  String get totalSleepDisplay {
+    final hours = totalSleep.inHours;
+    final minutes = totalSleep.inMinutes % 60;
+    return '${hours}h ${minutes}m';
+  }
+}
+
+/// GPSRoute - GPS coordinates for outdoor activities
+class GPSRoute {
+  final List<GPSPoint> points;
+  final double totalDistance; // in meters
+  final Duration totalTime;
+  final double averageSpeed; // m/s
+  final double maxSpeed; // m/s
+  final double elevationGain; // in meters
+  final double elevationLoss; // in meters
+
+  const GPSRoute({
+    required this.points,
+    required this.totalDistance,
+    required this.totalTime,
+    required this.averageSpeed,
+    required this.maxSpeed,
+    required this.elevationGain,
+    required this.elevationLoss,
+  });
+
+  // Convert to Firestore format
+  Map<String, dynamic> toFirestore() {
+    return {
+      'points': points.map((point) => point.toFirestore()).toList(),
+      'totalDistance': totalDistance,
+      'totalTimeMinutes': totalTime.inMinutes,
+      'averageSpeed': averageSpeed,
+      'maxSpeed': maxSpeed,
+      'elevationGain': elevationGain,
+      'elevationLoss': elevationLoss,
+    };
+  }
+
+  // Create from Firestore document
+  factory GPSRoute.fromFirestore(Map<String, dynamic> data) {
+    return GPSRoute(
+      points: (data['points'] as List<dynamic>?)
+          ?.map((point) => GPSPoint.fromFirestore(point))
+          .toList() ?? [],
+      totalDistance: data['totalDistance']?.toDouble() ?? 0.0,
+      totalTime: Duration(minutes: data['totalTimeMinutes'] ?? 0),
+      averageSpeed: data['averageSpeed']?.toDouble() ?? 0.0,
+      maxSpeed: data['maxSpeed']?.toDouble() ?? 0.0,
+      elevationGain: data['elevationGain']?.toDouble() ?? 0.0,
+      elevationLoss: data['elevationLoss']?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+/// GPSPoint - Individual GPS coordinate with timestamp
+class GPSPoint {
+  final DateTime timestamp;
+  final double latitude;
+  final double longitude;
+  final double? altitude; // in meters
+  final double? speed; // m/s
+
+  const GPSPoint({
+    required this.timestamp,
+    required this.latitude,
+    required this.longitude,
+    this.altitude,
+    this.speed,
+  });
+
+  // Convert to Firestore format
+  Map<String, dynamic> toFirestore() {
+    return {
+      'timestamp': timestamp,
+      'latitude': latitude,
+      'longitude': longitude,
+      'altitude': altitude,
+      'speed': speed,
+    };
+  }
+
+  // Create from Firestore document
+  factory GPSPoint.fromFirestore(Map<String, dynamic> data) {
+    return GPSPoint(
+      timestamp: data['timestamp'] is Timestamp
+          ? (data['timestamp'] as Timestamp).toDate()
+          : DateTime.parse(data['timestamp']),
+      latitude: data['latitude']?.toDouble() ?? 0.0,
+      longitude: data['longitude']?.toDouble() ?? 0.0,
+      altitude: data['altitude']?.toDouble(),
+      speed: data['speed']?.toDouble(),
+    );
+  }
+}
+
+/// HealthData - Unified health data from wearables
+class HealthData {
+  final DateTime date;
+  final int steps;
+  final double caloriesBurned; // Active calories
+  final double restingHeartRate; // BPM
+  final List<HeartRatePoint> heartRatePoints;
+  final SleepData? sleepData;
+  final double? activeEnergy; // Total active energy in kcal
+  final double? basalEnergy; // Basal metabolic rate in kcal
+  final double? distance; // Distance traveled in meters
+  final String source; // 'healthkit', 'google_fit', 'fitbit', etc.
+
+  const HealthData({
+    required this.date,
+    required this.steps,
+    required this.caloriesBurned,
+    required this.restingHeartRate,
+    this.heartRatePoints = const [],
+    this.sleepData,
+    this.activeEnergy,
+    this.basalEnergy,
+    this.distance,
+    this.source = 'unknown',
+  });
+
+  // Convert to Firestore format
+  Map<String, dynamic> toFirestore() {
+    return {
+      'date': date,
+      'steps': steps,
+      'caloriesBurned': caloriesBurned,
+      'restingHeartRate': restingHeartRate,
+      'heartRatePoints': heartRatePoints.map((point) => point.toFirestore()).toList(),
+      'sleepData': sleepData?.toFirestore(),
+      'activeEnergy': activeEnergy,
+      'basalEnergy': basalEnergy,
+      'distance': distance,
+      'source': source,
+    };
+  }
+
+  // Create from Firestore document
+  factory HealthData.fromFirestore(Map<String, dynamic> data) {
+    return HealthData(
+      date: data['date'] is Timestamp
+          ? (data['date'] as Timestamp).toDate()
+          : DateTime.parse(data['date']),
+      steps: data['steps'] ?? 0,
+      caloriesBurned: data['caloriesBurned']?.toDouble() ?? 0.0,
+      restingHeartRate: data['restingHeartRate']?.toDouble() ?? 0.0,
+      heartRatePoints: (data['heartRatePoints'] as List<dynamic>?)
+          ?.map((point) => HeartRatePoint.fromFirestore(point))
+          .toList() ?? [],
+      sleepData: data['sleepData'] != null
+          ? SleepData.fromFirestore(data['sleepData'])
+          : null,
+      activeEnergy: data['activeEnergy']?.toDouble(),
+      basalEnergy: data['basalEnergy']?.toDouble(),
+      distance: data['distance']?.toDouble(),
+      source: data['source'] ?? 'unknown',
+    );
+  }
+
+  // Calculate average heart rate during a time period
+  double getAverageHeartRate(DateTime start, DateTime end) {
+    final pointsInRange = heartRatePoints.where((point) =>
+        point.timestamp.isAfter(start) && point.timestamp.isBefore(end)).toList();
+
+    if (pointsInRange.isEmpty) return 0.0;
+
+    final sum = pointsInRange.fold<double>(0.0, (sum, point) => sum + point.heartRate);
+    return sum / pointsInRange.length;
+  }
+
+  // Get heart rate zones for a workout period
+  List<HeartRateZone> getHeartRateZones(DateTime workoutStart, DateTime workoutEnd, int? age) {
+    final workoutPoints = heartRatePoints.where((point) =>
+        point.timestamp.isAfter(workoutStart) && point.timestamp.isBefore(workoutEnd)).toList();
+
+    if (workoutPoints.isEmpty) return [];
+
+    final totalDuration = workoutEnd.difference(workoutStart);
+    final zoneCounts = <String, int>{};
+
+    for (final point in workoutPoints) {
+      final zone = point.getHeartRateZone(age, restingHeartRate);
+      zoneCounts[zone] = (zoneCounts[zone] ?? 0) + 1;
+    }
+
+    return zoneCounts.entries.map((entry) {
+      final duration = Duration(seconds: (entry.value * 10)); // Assuming 10-second intervals
+      final percentage = (duration.inSeconds / totalDuration.inSeconds) * 100;
+      return HeartRateZone(
+        zone: entry.key,
+        duration: duration,
+        percentage: percentage,
+      );
+    }).toList();
+  }
+}

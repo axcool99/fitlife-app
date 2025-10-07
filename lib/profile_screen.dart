@@ -152,6 +152,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         const SizedBox(height: FitLifeTheme.spacingXL),
 
+                        // Wearable Devices
+                        _buildSectionTitle('Wearable Devices'),
+                        const SizedBox(height: FitLifeTheme.spacingM),
+                        _buildWearableSection(),
+
+                        const SizedBox(height: FitLifeTheme.spacingXL),
+
                         // Account Management
                         _buildSectionTitle('Account'),
                         const SizedBox(height: FitLifeTheme.spacingM),
@@ -331,6 +338,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             final success = await _profileService.updateFitnessGoals(stepGoal: steps);
             if (!success) throw 'Failed to update step goal';
           },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWearableSection() {
+    return Column(
+      children: [
+        _buildActionButton(
+          'Device Connection',
+          Icons.watch,
+          () => Navigator.of(context).pushNamed('/device-connection'),
         ),
       ],
     );

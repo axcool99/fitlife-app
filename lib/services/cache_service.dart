@@ -459,6 +459,34 @@ class CacheService {
     }
   }
 
+  /// Generic save data method for wearable sync service
+  Future<void> saveData(String key, Map<String, dynamic> data) async {
+    await _ensureInitialized();
+    try {
+      await _analyticsBox.put(key, data);
+    } catch (e) {
+      throw Exception('Failed to save data to cache: $e');
+    }
+  }
+
+  /// Generic load data method for wearable sync service
+  Future<Map<String, dynamic>?> loadData(String key) async {
+    await _ensureInitialized();
+    try {
+      final data = _analyticsBox.get(key);
+      if (data == null) return null;
+
+      // Handle the case where Hive returns Map<dynamic, dynamic>
+      if (data is Map) {
+        return data.map((key, value) => MapEntry(key.toString(), value));
+      }
+
+      return data as Map<String, dynamic>?;
+    } catch (e) {
+      throw Exception('Failed to load data from cache: $e');
+    }
+  }
+
   /// Close all boxes (call when app is terminating)
   Future<void> close() async {
     if (_isInitialized) {

@@ -35,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final GamificationService _gamificationService = getIt<GamificationService>();
   final NetworkService _networkService = getIt<NetworkService>();
   final SyncService _syncService = getIt<SyncService>();
+  final WearableSyncService _wearableSyncService = getIt<WearableSyncService>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isOnline = true; // Track online status
@@ -43,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<List<WorkoutSuggestion>>? _workoutSuggestionsFuture;
   Future<GamificationSummary>? _gamificationSummaryFuture;
   Future<Map<DateTime, double>>? _caloriesDataFuture;
+  Future<HealthData?>? _todayHealthDataFuture;
 
   @override
   void initState() {
@@ -69,6 +71,10 @@ class _HomeScreenState extends State<HomeScreen> {
     _caloriesDataFuture = _analyticsService.getDailyCaloriesBurned().timeout(
       const Duration(seconds: 5),
       onTimeout: () => <DateTime, double>{},
+    );
+    _todayHealthDataFuture = _wearableSyncService.getHealthData(DateTime.now()).timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => null,
     );
   }
 
@@ -1040,6 +1046,219 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
+                // Wearable Health Data Section
+                FadeInAnimation(
+                  child: _todayHealthDataFuture != null
+                      ? FutureBuilder<HealthData?>(
+                          future: _todayHealthDataFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return AppCard(
+                                useCleanStyle: true,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(FitLifeTheme.spacingM),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      AppText(
+                                        'Health Metrics',
+                                        type: AppTextType.headingSmall,
+                                        color: FitLifeTheme.primaryText,
+                                        useCleanStyle: true,
+                                      ),
+                                      const SizedBox(height: FitLifeTheme.spacingL),
+                                      const Center(
+                                        child: CircularProgressIndicator(
+                                          color: FitLifeTheme.accentGreen,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final healthData = snapshot.data;
+                            if (healthData == null) {
+                              return const SizedBox.shrink(); // Hide if no wearable data
+                            }
+
+                            return AppCard(
+                              useCleanStyle: true,
+                              child: Padding(
+                                padding: const EdgeInsets.all(FitLifeTheme.spacingM),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.monitor_heart,
+                                          color: FitLifeTheme.accentPurple,
+                                          size: 24,
+                                        ),
+                                        const SizedBox(width: FitLifeTheme.spacingS),
+                                        AppText(
+                                          'Health Metrics',
+                                          type: AppTextType.bodyLarge,
+                                          color: FitLifeTheme.primaryText,
+                                          useCleanStyle: true,
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: FitLifeTheme.spacingL),
+
+                                    // Resting Heart Rate
+                                    if (healthData.restingHeartRate != null) ...[
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.favorite,
+                                                color: FitLifeTheme.accentPurple,
+                                                size: 20,
+                                              ),
+                                              const SizedBox(width: FitLifeTheme.spacingS),
+                                              AppText(
+                                                'Resting HR',
+                                                type: AppTextType.bodySmall,
+                                                color: FitLifeTheme.primaryText.withOpacity(0.8),
+                                                useCleanStyle: true,
+                                              ),
+                                            ],
+                                          ),
+                                          AppText(
+                                            '${healthData.restingHeartRate!.round()} bpm',
+                                            type: AppTextType.bodyMedium,
+                                            color: FitLifeTheme.primaryText,
+                                            useCleanStyle: true,
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: FitLifeTheme.spacingM),
+                                    ],
+
+                                    // Sleep Data
+                                    if (healthData.sleepData != null) ...[
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.bedtime,
+                                                color: FitLifeTheme.accentBlue,
+                                                size: 20,
+                                              ),
+                                              const SizedBox(width: FitLifeTheme.spacingS),
+                                              AppText(
+                                                'Sleep',
+                                                type: AppTextType.bodySmall,
+                                                color: FitLifeTheme.primaryText.withOpacity(0.8),
+                                                useCleanStyle: true,
+                                              ),
+                                            ],
+                                          ),
+                                          AppText(
+                                            healthData.sleepData!.totalSleepDisplay,
+                                            type: AppTextType.bodyMedium,
+                                            color: FitLifeTheme.primaryText,
+                                            useCleanStyle: true,
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: FitLifeTheme.spacingS),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          AppText(
+                                            'Quality',
+                                            type: AppTextType.bodySmall,
+                                            color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                            useCleanStyle: true,
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: FitLifeTheme.spacingS,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: _getSleepQualityColor(healthData.sleepData!.sleepQualityRating),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: AppText(
+                                              _getSleepQualityText(healthData.sleepData!.sleepQualityRating),
+                                              type: AppTextType.bodySmall,
+                                              color: FitLifeTheme.surfaceColor,
+                                              useCleanStyle: true,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: FitLifeTheme.spacingM),
+                                    ],
+
+                                    // Active Energy (if different from workout calories)
+                                    if (healthData.activeEnergy != null && healthData.activeEnergy! > 0) ...[
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.local_fire_department,
+                                                color: FitLifeTheme.accentOrange,
+                                                size: 20,
+                                              ),
+                                              const SizedBox(width: FitLifeTheme.spacingS),
+                                              AppText(
+                                                'Active Energy',
+                                                type: AppTextType.bodySmall,
+                                                color: FitLifeTheme.primaryText.withOpacity(0.8),
+                                                useCleanStyle: true,
+                                              ),
+                                            ],
+                                          ),
+                                          AppText(
+                                            '${healthData.activeEnergy!.round()} kcal',
+                                            type: AppTextType.bodyMedium,
+                                            color: FitLifeTheme.primaryText,
+                                            useCleanStyle: true,
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: FitLifeTheme.spacingM),
+                                    ],
+
+                                    // Data Source
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        AppText(
+                                          'Source',
+                                          type: AppTextType.bodySmall,
+                                          color: FitLifeTheme.primaryText.withOpacity(0.6),
+                                          useCleanStyle: true,
+                                        ),
+                                        AppText(
+                                          _getSourceDisplayName(healthData.source),
+                                          type: AppTextType.bodySmall,
+                                          color: FitLifeTheme.primaryText.withOpacity(0.8),
+                                          useCleanStyle: true,
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : const SizedBox.shrink(),
+                ),
+
                 const SizedBox(height: FitLifeTheme.spacingXL),
               ],
             ),
@@ -1369,5 +1588,35 @@ class _HomeScreenState extends State<HomeScreen> {
     Future.delayed(const Duration(milliseconds: 100), () {
       WorkoutScreen.showAddWorkoutDialog(suggestion);
     });
+  }
+
+  // Helper methods for wearable data display
+  Color _getSleepQualityColor(int rating) {
+    if (rating >= 4) return FitLifeTheme.accentGreen;
+    if (rating >= 3) return FitLifeTheme.accentBlue;
+    if (rating >= 2) return FitLifeTheme.accentOrange;
+    return FitLifeTheme.error;
+  }
+
+  String _getSleepQualityText(int rating) {
+    if (rating >= 4) return 'Excellent';
+    if (rating >= 3) return 'Good';
+    if (rating >= 2) return 'Fair';
+    return 'Poor';
+  }
+
+  String _getSourceDisplayName(String? source) {
+    switch (source) {
+      case 'healthkit':
+        return 'Apple Health';
+      case 'google_fit':
+        return 'Google Fit';
+      case 'fitbit':
+        return 'Fitbit';
+      case 'garmin':
+        return 'Garmin';
+      default:
+        return 'Wearable Device';
+    }
   }
 }

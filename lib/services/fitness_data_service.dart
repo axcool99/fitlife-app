@@ -12,6 +12,16 @@ class FitnessData {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // Wearable integration fields
+  final double? restingHeartRate;
+  final double? activeEnergy; // Active energy from wearables
+  final double? basalEnergy; // Basal metabolic rate
+  final double? distance; // Distance traveled in meters
+  final int? flightsClimbed;
+  final Duration? sleepDuration; // Total sleep time
+  final int? sleepEfficiency; // Sleep efficiency percentage
+  final String? dataSource; // 'manual', 'healthkit', 'google_fit', etc.
+
   FitnessData({
     required this.id,
     required this.userId,
@@ -21,6 +31,14 @@ class FitnessData {
     required this.workoutsCompleted,
     required this.createdAt,
     required this.updatedAt,
+    this.restingHeartRate,
+    this.activeEnergy,
+    this.basalEnergy,
+    this.distance,
+    this.flightsClimbed,
+    this.sleepDuration,
+    this.sleepEfficiency,
+    this.dataSource = 'manual',
   });
 
   /// Create FitnessData from Firestore document
@@ -35,6 +53,17 @@ class FitnessData {
       workoutsCompleted: data['workoutsCompleted'] ?? 0,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      // Wearable data fields
+      restingHeartRate: data['restingHeartRate']?.toDouble(),
+      activeEnergy: data['activeEnergy']?.toDouble(),
+      basalEnergy: data['basalEnergy']?.toDouble(),
+      distance: data['distance']?.toDouble(),
+      flightsClimbed: data['flightsClimbed'] as int?,
+      sleepDuration: data['sleepDurationMinutes'] != null
+          ? Duration(minutes: data['sleepDurationMinutes'])
+          : null,
+      sleepEfficiency: data['sleepEfficiency'] as int?,
+      dataSource: data['dataSource'] ?? 'manual',
     );
   }
 
@@ -48,6 +77,15 @@ class FitnessData {
       'workoutsCompleted': workoutsCompleted,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
+      // Wearable data fields
+      'restingHeartRate': restingHeartRate,
+      'activeEnergy': activeEnergy,
+      'basalEnergy': basalEnergy,
+      'distance': distance,
+      'flightsClimbed': flightsClimbed,
+      'sleepDurationMinutes': sleepDuration?.inMinutes,
+      'sleepEfficiency': sleepEfficiency,
+      'dataSource': dataSource,
     };
   }
 
@@ -61,6 +99,14 @@ class FitnessData {
     int? workoutsCompleted,
     DateTime? createdAt,
     DateTime? updatedAt,
+    double? restingHeartRate,
+    double? activeEnergy,
+    double? basalEnergy,
+    double? distance,
+    int? flightsClimbed,
+    Duration? sleepDuration,
+    int? sleepEfficiency,
+    String? dataSource,
   }) {
     return FitnessData(
       id: id ?? this.id,
@@ -71,6 +117,14 @@ class FitnessData {
       workoutsCompleted: workoutsCompleted ?? this.workoutsCompleted,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      restingHeartRate: restingHeartRate ?? this.restingHeartRate,
+      activeEnergy: activeEnergy ?? this.activeEnergy,
+      basalEnergy: basalEnergy ?? this.basalEnergy,
+      distance: distance ?? this.distance,
+      flightsClimbed: flightsClimbed ?? this.flightsClimbed,
+      sleepDuration: sleepDuration ?? this.sleepDuration,
+      sleepEfficiency: sleepEfficiency ?? this.sleepEfficiency,
+      dataSource: dataSource ?? this.dataSource,
     );
   }
 }
@@ -155,6 +209,33 @@ class FitnessDataService {
     if (caloriesBurned != null) updates['caloriesBurned'] = caloriesBurned;
     if (stepsCount != null) updates['stepsCount'] = stepsCount;
     if (workoutsCompleted != null) updates['workoutsCompleted'] = workoutsCompleted;
+
+    await _getTodayDocRef().update(updates);
+  }
+
+  /// Update wearable health data for today
+  Future<void> updateWearableData({
+    double? restingHeartRate,
+    double? activeEnergy,
+    double? basalEnergy,
+    double? distance,
+    int? flightsClimbed,
+    Duration? sleepDuration,
+    int? sleepEfficiency,
+    String? dataSource,
+  }) async {
+    final updates = <String, dynamic>{
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
+    };
+
+    if (restingHeartRate != null) updates['restingHeartRate'] = restingHeartRate;
+    if (activeEnergy != null) updates['activeEnergy'] = activeEnergy;
+    if (basalEnergy != null) updates['basalEnergy'] = basalEnergy;
+    if (distance != null) updates['distance'] = distance;
+    if (flightsClimbed != null) updates['flightsClimbed'] = flightsClimbed;
+    if (sleepDuration != null) updates['sleepDurationMinutes'] = sleepDuration.inMinutes;
+    if (sleepEfficiency != null) updates['sleepEfficiency'] = sleepEfficiency;
+    if (dataSource != null) updates['dataSource'] = dataSource;
 
     await _getTodayDocRef().update(updates);
   }

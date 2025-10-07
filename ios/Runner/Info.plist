@@ -47,5 +47,13 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSHealthShareUsageDescription</key>
+		<string>This app requires access to health data to provide personalized fitness insights and track your progress.</string>
+		<key>NSHealthUpdateUsageDescription</key>
+		<string>This app requires permission to write workout data to HealthKit for comprehensive fitness tracking.</string>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>processing</string>
+		</array>
 	</dict>
 </plist>
