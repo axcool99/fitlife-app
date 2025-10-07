@@ -15,11 +15,17 @@ class CacheService {
   static const String _checkinsBoxName = 'checkins';
   static const String _syncStatusBoxName = 'sync_status';
   static const String _analyticsBoxName = 'analytics';
+  static const String _mealsBoxName = 'meals';
+  static const String _foodItemsBoxName = 'food_items';
+  static const String _userPreferencesBoxName = 'user_preferences';
 
   late Box<Workout> _workoutsBox;
   late Box<CheckIn> _checkinsBox;
   late Box _syncStatusBox;
   late Box _analyticsBox;
+  late Box _mealsBox;
+  late Box _foodItemsBox;
+  late Box _userPreferencesBox;
 
   bool _isInitialized = false;
 
@@ -44,6 +50,9 @@ class CacheService {
       _checkinsBox = await Hive.openBox<CheckIn>(_checkinsBoxName);
       _syncStatusBox = await Hive.openBox(_syncStatusBoxName);
       _analyticsBox = await Hive.openBox(_analyticsBoxName);
+      _mealsBox = await Hive.openBox(_mealsBoxName);
+      _foodItemsBox = await Hive.openBox(_foodItemsBoxName);
+      _userPreferencesBox = await Hive.openBox(_userPreferencesBoxName);
 
       _isInitialized = true;
     } catch (e) {
@@ -385,6 +394,68 @@ class CacheService {
   Future<void> _ensureInitialized() async {
     if (!_isInitialized) {
       await initialize();
+    }
+  }
+
+  // ===== MEALS CACHE =====
+
+  /// Save meals to cache
+  Future<void> saveMeals(Map<String, Map<String, dynamic>> meals) async {
+    await _ensureInitialized();
+    try {
+      await _mealsBox.clear();
+      await _mealsBox.putAll(meals);
+    } catch (e) {
+      throw Exception('Failed to save meals to cache: $e');
+    }
+  }
+
+  /// Get cached meals
+  Future<Map<String, Map<String, dynamic>>> getCachedMeals() async {
+    await _ensureInitialized();
+    try {
+      final meals = <String, Map<String, dynamic>>{};
+      for (final key in _mealsBox.keys) {
+        final data = _mealsBox.get(key);
+        if (data != null) {
+          meals[key.toString()] = Map<String, dynamic>.from(data);
+        }
+      }
+      return meals;
+    } catch (e) {
+      print('Error getting cached meals: $e');
+      return {};
+    }
+  }
+
+  // ===== FOOD ITEMS CACHE =====
+
+  /// Save food items to cache
+  Future<void> saveFoodItems(Map<String, Map<String, dynamic>> foodItems) async {
+    await _ensureInitialized();
+    try {
+      await _foodItemsBox.clear();
+      await _foodItemsBox.putAll(foodItems);
+    } catch (e) {
+      throw Exception('Failed to save food items to cache: $e');
+    }
+  }
+
+  /// Get cached food items
+  Future<Map<String, Map<String, dynamic>>> getCachedFoodItems() async {
+    await _ensureInitialized();
+    try {
+      final foodItems = <String, Map<String, dynamic>>{};
+      for (final key in _foodItemsBox.keys) {
+        final data = _foodItemsBox.get(key);
+        if (data != null) {
+          foodItems[key.toString()] = Map<String, dynamic>.from(data);
+        }
+      }
+      return foodItems;
+    } catch (e) {
+      print('Error getting cached food items: $e');
+      return {};
     }
   }
 

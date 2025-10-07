@@ -223,6 +223,20 @@ class UserPreferences {
   final Map<String, int> exerciseFrequency; // how often they do each exercise
   final DateTime? lastUpdated;
 
+  // Nutrition preferences
+  final int? dailyCalorieGoal; // target daily calories
+  final double? proteinGoal; // target protein in grams
+  final double? carbGoal; // target carbs in grams
+  final double? fatGoal; // target fat in grams
+  final List<String> dietaryRestrictions; // ['vegetarian', 'vegan', 'gluten_free', 'dairy_free', etc.]
+  final List<String> foodAllergies; // ['nuts', 'dairy', 'eggs', 'soy', etc.]
+  final List<String> preferredCuisines; // ['italian', 'mexican', 'asian', etc.]
+  final bool trackWaterIntake; // whether to track water consumption
+  final int? dailyWaterGoal; // target water intake in ml
+  final List<String> mealTimingPreferences; // ['intermittent_fasting', 'grazing', '3_meals', '5_meals']
+  final bool enableNutritionReminders; // whether to show nutrition reminders
+  final Map<String, int> mealFrequencyGoals; // meal type -> target frequency per week
+
   const UserPreferences({
     this.id,
     required this.userId,
@@ -243,6 +257,19 @@ class UserPreferences {
     this.exerciseCompletionRates = const {},
     this.exerciseFrequency = const {},
     this.lastUpdated,
+    // Nutrition preferences
+    this.dailyCalorieGoal,
+    this.proteinGoal,
+    this.carbGoal,
+    this.fatGoal,
+    this.dietaryRestrictions = const [],
+    this.foodAllergies = const [],
+    this.preferredCuisines = const [],
+    this.trackWaterIntake = false,
+    this.dailyWaterGoal,
+    this.mealTimingPreferences = const [],
+    this.enableNutritionReminders = true,
+    this.mealFrequencyGoals = const {},
   });
 
   // Default preferences for new users
@@ -263,6 +290,33 @@ class UserPreferences {
     'bodyweight', 'dumbbells', 'barbell', 'kettlebell', 'resistance_bands',
     'pull_up_bar', 'bench', 'cable_machine', 'treadmill', 'bike', 'rower'
   ];
+
+  // Nutrition constants
+  static const List<String> availableDietaryRestrictions = [
+    'vegetarian', 'vegan', 'pescatarian', 'gluten_free', 'dairy_free',
+    'nut_free', 'soy_free', 'low_carb', 'keto', 'paleo', 'mediterranean'
+  ];
+
+  static const List<String> availableFoodAllergies = [
+    'nuts', 'peanuts', 'tree_nuts', 'dairy', 'eggs', 'soy', 'wheat',
+    'fish', 'shellfish', 'sesame', 'sulfites'
+  ];
+
+  static const List<String> availableCuisines = [
+    'american', 'italian', 'mexican', 'chinese', 'japanese', 'indian',
+    'thai', 'french', 'greek', 'mediterranean', 'korean', 'vietnamese'
+  ];
+
+  static const List<String> availableMealTimings = [
+    '3_meals', '5_meals', 'intermittent_fasting', 'grazing', 'carb_backloading'
+  ];
+
+  static const Map<String, int> defaultMealFrequencyGoals = {
+    'breakfast': 7, // 7 days per week
+    'lunch': 7,
+    'dinner': 7,
+    'snack': 3,
+  };
 
   static const List<String> workoutLocations = ['home', 'gym', 'both'];
   static const List<String> progressionStyles = ['conservative', 'moderate', 'aggressive'];
@@ -289,7 +343,26 @@ class UserPreferences {
       medicalConditions: List<String>.from(data['medicalConditions'] ?? []),
       exerciseCompletionRates: Map<String, double>.from(data['exerciseCompletionRates'] ?? {}),
       exerciseFrequency: Map<String, int>.from(data['exerciseFrequency'] ?? {}),
-      lastUpdated: (data['lastUpdated'] as Timestamp?)?.toDate(),
+      lastUpdated: data['lastUpdated'] is Timestamp
+        ? (data['lastUpdated'] as Timestamp).toDate()
+        : data['lastUpdated'] is DateTime
+          ? data['lastUpdated'] as DateTime
+          : data['lastUpdated'] is String
+            ? DateTime.tryParse(data['lastUpdated'])
+            : null,
+      // Nutrition preferences
+      dailyCalorieGoal: data['dailyCalorieGoal'] as int?,
+      proteinGoal: data['proteinGoal']?.toDouble(),
+      carbGoal: data['carbGoal']?.toDouble(),
+      fatGoal: data['fatGoal']?.toDouble(),
+      dietaryRestrictions: List<String>.from(data['dietaryRestrictions'] ?? []),
+      foodAllergies: List<String>.from(data['foodAllergies'] ?? []),
+      preferredCuisines: List<String>.from(data['preferredCuisines'] ?? []),
+      trackWaterIntake: data['trackWaterIntake'] ?? false,
+      dailyWaterGoal: data['dailyWaterGoal'] as int?,
+      mealTimingPreferences: List<String>.from(data['mealTimingPreferences'] ?? []),
+      enableNutritionReminders: data['enableNutritionReminders'] ?? true,
+      mealFrequencyGoals: Map<String, int>.from(data['mealFrequencyGoals'] ?? defaultMealFrequencyGoals),
     );
   }
 
@@ -314,6 +387,19 @@ class UserPreferences {
       'exerciseCompletionRates': exerciseCompletionRates,
       'exerciseFrequency': exerciseFrequency,
       'lastUpdated': FieldValue.serverTimestamp(),
+      // Nutrition preferences
+      'dailyCalorieGoal': dailyCalorieGoal,
+      'proteinGoal': proteinGoal,
+      'carbGoal': carbGoal,
+      'fatGoal': fatGoal,
+      'dietaryRestrictions': dietaryRestrictions,
+      'foodAllergies': foodAllergies,
+      'preferredCuisines': preferredCuisines,
+      'trackWaterIntake': trackWaterIntake,
+      'dailyWaterGoal': dailyWaterGoal,
+      'mealTimingPreferences': mealTimingPreferences,
+      'enableNutritionReminders': enableNutritionReminders,
+      'mealFrequencyGoals': mealFrequencyGoals,
     };
   }
 
@@ -338,6 +424,19 @@ class UserPreferences {
       'exerciseCompletionRates': exerciseCompletionRates,
       'exerciseFrequency': exerciseFrequency,
       'lastUpdated': lastUpdated?.toIso8601String(),
+      // Nutrition preferences
+      'dailyCalorieGoal': dailyCalorieGoal,
+      'proteinGoal': proteinGoal,
+      'carbGoal': carbGoal,
+      'fatGoal': fatGoal,
+      'dietaryRestrictions': dietaryRestrictions,
+      'foodAllergies': foodAllergies,
+      'preferredCuisines': preferredCuisines,
+      'trackWaterIntake': trackWaterIntake,
+      'dailyWaterGoal': dailyWaterGoal,
+      'mealTimingPreferences': mealTimingPreferences,
+      'enableNutritionReminders': enableNutritionReminders,
+      'mealFrequencyGoals': mealFrequencyGoals,
     };
   }
 
@@ -394,6 +493,19 @@ class UserPreferences {
     Map<String, double>? exerciseCompletionRates,
     Map<String, int>? exerciseFrequency,
     DateTime? lastUpdated,
+    // Nutrition preferences
+    int? dailyCalorieGoal,
+    double? proteinGoal,
+    double? carbGoal,
+    double? fatGoal,
+    List<String>? dietaryRestrictions,
+    List<String>? foodAllergies,
+    List<String>? preferredCuisines,
+    bool? trackWaterIntake,
+    int? dailyWaterGoal,
+    List<String>? mealTimingPreferences,
+    bool? enableNutritionReminders,
+    Map<String, int>? mealFrequencyGoals,
   }) {
     return UserPreferences(
       id: id ?? this.id,
@@ -415,6 +527,800 @@ class UserPreferences {
       exerciseCompletionRates: exerciseCompletionRates ?? this.exerciseCompletionRates,
       exerciseFrequency: exerciseFrequency ?? this.exerciseFrequency,
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      // Nutrition preferences
+      dailyCalorieGoal: dailyCalorieGoal ?? this.dailyCalorieGoal,
+      proteinGoal: proteinGoal ?? this.proteinGoal,
+      carbGoal: carbGoal ?? this.carbGoal,
+      fatGoal: fatGoal ?? this.fatGoal,
+      dietaryRestrictions: dietaryRestrictions ?? this.dietaryRestrictions,
+      foodAllergies: foodAllergies ?? this.foodAllergies,
+      preferredCuisines: preferredCuisines ?? this.preferredCuisines,
+      trackWaterIntake: trackWaterIntake ?? this.trackWaterIntake,
+      dailyWaterGoal: dailyWaterGoal ?? this.dailyWaterGoal,
+      mealTimingPreferences: mealTimingPreferences ?? this.mealTimingPreferences,
+      enableNutritionReminders: enableNutritionReminders ?? this.enableNutritionReminders,
+      mealFrequencyGoals: mealFrequencyGoals ?? this.mealFrequencyGoals,
+    );
+  }
+}
+
+/// NutritionData - Nutritional information for food items
+class NutritionData {
+  final double? calories; // kcal
+  final double? protein; // grams
+  final double? carbs; // grams
+  final double? fat; // grams
+  final double? fiber; // grams
+  final double? sugar; // grams
+  final double? sodium; // mg
+  final double? potassium; // mg
+  final double? calcium; // mg
+  final double? iron; // mg
+  final double? vitaminC; // mg
+  final double? vitaminA; // IU
+  final double? cholesterol; // mg
+  final double? saturatedFat; // grams
+  final double? transFat; // grams
+
+  const NutritionData({
+    this.calories,
+    this.protein,
+    this.carbs,
+    this.fat,
+    this.fiber,
+    this.sugar,
+    this.sodium,
+    this.potassium,
+    this.calcium,
+    this.iron,
+    this.vitaminC,
+    this.vitaminA,
+    this.cholesterol,
+    this.saturatedFat,
+    this.transFat,
+  });
+
+  // Create from Nutritionix API response
+  factory NutritionData.fromNutritionix(Map<String, dynamic> data) {
+    return NutritionData(
+      calories: data['nf_calories']?.toDouble(),
+      protein: data['nf_protein']?.toDouble(),
+      carbs: data['nf_total_carbohydrate']?.toDouble(),
+      fat: data['nf_total_fat']?.toDouble(),
+      fiber: data['nf_dietary_fiber']?.toDouble(),
+      sugar: data['nf_sugars']?.toDouble(),
+      sodium: data['nf_sodium']?.toDouble(),
+      potassium: data['nf_potassium']?.toDouble(),
+      calcium: data['nf_calcium']?.toDouble(),
+      iron: data['nf_iron']?.toDouble(),
+      vitaminC: data['nf_vitamin_c']?.toDouble(),
+      vitaminA: data['nf_vitamin_a']?.toDouble(),
+      cholesterol: data['nf_cholesterol']?.toDouble(),
+      saturatedFat: data['nf_saturated_fat']?.toDouble(),
+      transFat: data['nf_trans_fatty_acid']?.toDouble(),
+    );
+  }
+
+  // Convert to Firestore format
+  Map<String, dynamic> toFirestore() {
+    return {
+      'calories': calories,
+      'protein': protein,
+      'carbs': carbs,
+      'fat': fat,
+      'fiber': fiber,
+      'sugar': sugar,
+      'sodium': sodium,
+      'potassium': potassium,
+      'calcium': calcium,
+      'iron': iron,
+      'vitaminC': vitaminC,
+      'vitaminA': vitaminA,
+      'cholesterol': cholesterol,
+      'saturatedFat': saturatedFat,
+      'transFat': transFat,
+    };
+  }
+
+  // Create from Firestore document
+  factory NutritionData.fromFirestore(Map<String, dynamic> data) {
+    return NutritionData(
+      calories: data['calories']?.toDouble(),
+      protein: data['protein']?.toDouble(),
+      carbs: data['carbs']?.toDouble(),
+      fat: data['fat']?.toDouble(),
+      fiber: data['fiber']?.toDouble(),
+      sugar: data['sugar']?.toDouble(),
+      sodium: data['sodium']?.toDouble(),
+      potassium: data['potassium']?.toDouble(),
+      calcium: data['calcium']?.toDouble(),
+      iron: data['iron']?.toDouble(),
+      vitaminC: data['vitaminC']?.toDouble(),
+      vitaminA: data['vitaminA']?.toDouble(),
+      cholesterol: data['cholesterol']?.toDouble(),
+      saturatedFat: data['saturatedFat']?.toDouble(),
+      transFat: data['transFat']?.toDouble(),
+    );
+  }
+
+  // Add two nutrition data objects together
+  NutritionData operator +(NutritionData other) {
+    return NutritionData(
+      calories: (calories ?? 0) + (other.calories ?? 0),
+      protein: (protein ?? 0) + (other.protein ?? 0),
+      carbs: (carbs ?? 0) + (other.carbs ?? 0),
+      fat: (fat ?? 0) + (other.fat ?? 0),
+      fiber: (fiber ?? 0) + (other.fiber ?? 0),
+      sugar: (sugar ?? 0) + (other.sugar ?? 0),
+      sodium: (sodium ?? 0) + (other.sodium ?? 0),
+      potassium: (potassium ?? 0) + (other.potassium ?? 0),
+      calcium: (calcium ?? 0) + (other.calcium ?? 0),
+      iron: (iron ?? 0) + (other.iron ?? 0),
+      vitaminC: (vitaminC ?? 0) + (other.vitaminC ?? 0),
+      vitaminA: (vitaminA ?? 0) + (other.vitaminA ?? 0),
+      cholesterol: (cholesterol ?? 0) + (other.cholesterol ?? 0),
+      saturatedFat: (saturatedFat ?? 0) + (other.saturatedFat ?? 0),
+      transFat: (transFat ?? 0) + (other.transFat ?? 0),
+    );
+  }
+
+  // Multiply nutrition data by a scalar (for portion adjustments)
+  NutritionData operator *(double multiplier) {
+    return NutritionData(
+      calories: calories != null ? calories! * multiplier : null,
+      protein: protein != null ? protein! * multiplier : null,
+      carbs: carbs != null ? carbs! * multiplier : null,
+      fat: fat != null ? fat! * multiplier : null,
+      fiber: fiber != null ? fiber! * multiplier : null,
+      sugar: sugar != null ? sugar! * multiplier : null,
+      sodium: sodium != null ? sodium! * multiplier : null,
+      potassium: potassium != null ? potassium! * multiplier : null,
+      calcium: calcium != null ? calcium! * multiplier : null,
+      iron: iron != null ? iron! * multiplier : null,
+      vitaminC: vitaminC != null ? vitaminC! * multiplier : null,
+      vitaminA: vitaminA != null ? vitaminA! * multiplier : null,
+      cholesterol: cholesterol != null ? cholesterol! * multiplier : null,
+      saturatedFat: saturatedFat != null ? saturatedFat! * multiplier : null,
+      transFat: transFat != null ? transFat! * multiplier : null,
+    );
+  }
+
+  // Get macronutrient percentages (based on calories)
+  double get proteinPercentage => protein != null && calories != null && calories! > 0
+      ? (protein! * 4 / calories!) * 100 : 0;
+  double get carbPercentage => carbs != null && calories != null && calories! > 0
+      ? (carbs! * 4 / calories!) * 100 : 0;
+  double get fatPercentage => fat != null && calories != null && calories! > 0
+      ? (fat! * 9 / calories!) * 100 : 0;
+
+  // Check if nutrition data is empty (all null values)
+  bool get isEmpty => calories == null && protein == null && carbs == null && fat == null;
+
+  // Get formatted display values
+  String get caloriesDisplay => calories != null ? '${calories!.round()} kcal' : '0 kcal';
+  String get proteinDisplay => protein != null ? '${protein!.toStringAsFixed(1)}g' : '0g';
+  String get carbsDisplay => carbs != null ? '${carbs!.toStringAsFixed(1)}g' : '0g';
+  String get fatDisplay => fat != null ? '${fat!.toStringAsFixed(1)}g' : '0g';
+}
+
+/// FoodItem - Individual food item with nutritional data
+class FoodItem {
+  final String? id;
+  final String name;
+  final String? brand;
+  final double servingSize; // grams
+  final String servingUnit; // 'g', 'ml', 'cup', etc.
+  final NutritionData nutritionData;
+  final String? foodId; // Nutritionix food ID
+  final String? imageUrl;
+  final List<String> tags; // ['vegetarian', 'gluten_free', etc.]
+  final bool isCustom; // true if manually created, false if from API
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  const FoodItem({
+    this.id,
+    required this.name,
+    this.brand,
+    required this.servingSize,
+    this.servingUnit = 'g',
+    required this.nutritionData,
+    this.foodId,
+    this.imageUrl,
+    this.tags = const [],
+    this.isCustom = false,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  // Create from Nutritionix API response
+  factory FoodItem.fromNutritionix(Map<String, dynamic> data) {
+    final foodData = data['food'] ?? data;
+    final servingData = foodData['serving_weight_grams'] != null
+        ? {'weight': foodData['serving_weight_grams'], 'unit': 'g'}
+        : foodData['serving_qty'] != null && foodData['serving_unit'] != null
+            ? {'weight': foodData['serving_qty'], 'unit': foodData['serving_unit']}
+            : {'weight': 100.0, 'unit': 'g'};
+
+    return FoodItem(
+      name: foodData['food_name'] ?? 'Unknown Food',
+      brand: foodData['brand_name'],
+      servingSize: servingData['weight']?.toDouble() ?? 100.0,
+      servingUnit: servingData['unit'] ?? 'g',
+      nutritionData: NutritionData.fromNutritionix(foodData),
+      foodId: foodData['food_id']?.toString(),
+      imageUrl: foodData['photo']?['thumb'],
+      tags: List<String>.from(foodData['tags'] ?? []),
+      isCustom: false,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // Convert to Firestore format
+  Map<String, dynamic> toFirestore() {
+    return {
+      'name': name,
+      'brand': brand,
+      'servingSize': servingSize,
+      'servingUnit': servingUnit,
+      'nutritionData': nutritionData.toFirestore(),
+      'foodId': foodId,
+      'imageUrl': imageUrl,
+      'tags': tags,
+      'isCustom': isCustom,
+      'createdAt': createdAt ?? DateTime.now(),
+      'updatedAt': DateTime.now(),
+    };
+  }
+
+  // Create from Firestore document
+  factory FoodItem.fromFirestore(Map<String, dynamic> data, String id) {
+    return FoodItem(
+      id: id,
+      name: data['name'] ?? '',
+      brand: data['brand'],
+      servingSize: data['servingSize']?.toDouble() ?? 100.0,
+      servingUnit: data['servingUnit'] ?? 'g',
+      nutritionData: NutritionData.fromFirestore(data['nutritionData'] ?? {}),
+      foodId: data['foodId'],
+      imageUrl: data['imageUrl'],
+      tags: List<String>.from(data['tags'] ?? []),
+      isCustom: data['isCustom'] ?? false,
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : null,
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : null,
+    );
+  }
+
+  // Create custom food item
+  factory FoodItem.createCustom({
+    required String name,
+    String? brand,
+    required double servingSize,
+    String servingUnit = 'g',
+    required NutritionData nutritionData,
+    List<String> tags = const [],
+  }) {
+    return FoodItem(
+      name: name,
+      brand: brand,
+      servingSize: servingSize,
+      servingUnit: servingUnit,
+      nutritionData: nutritionData,
+      tags: tags,
+      isCustom: true,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // Copy with method
+  FoodItem copyWith({
+    String? id,
+    String? name,
+    String? brand,
+    double? servingSize,
+    String? servingUnit,
+    NutritionData? nutritionData,
+    String? foodId,
+    String? imageUrl,
+    List<String>? tags,
+    bool? isCustom,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return FoodItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      brand: brand ?? this.brand,
+      servingSize: servingSize ?? this.servingSize,
+      servingUnit: servingUnit ?? this.servingUnit,
+      nutritionData: nutritionData ?? this.nutritionData,
+      foodId: foodId ?? this.foodId,
+      imageUrl: imageUrl ?? this.imageUrl,
+      tags: tags ?? this.tags,
+      isCustom: isCustom ?? this.isCustom,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  // Get adjusted nutrition data for a specific portion
+  NutritionData getNutritionForPortion(double portionSize) {
+    final multiplier = portionSize / servingSize;
+    return nutritionData * multiplier;
+  }
+
+  // Display helpers
+  String get displayName => brand != null ? '$brand $name' : name;
+  String get servingDisplay => '${servingSize.toStringAsFixed(0)}$servingUnit';
+}
+
+/// Meal - Collection of food items consumed at a specific time
+class Meal {
+  final String? id;
+  final String userId;
+  final String name;
+  final String type; // 'breakfast', 'lunch', 'dinner', 'snack'
+  final DateTime dateTime;
+  final List<MealFoodItem> foodItems;
+  final String? notes;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  const Meal({
+    this.id,
+    required this.userId,
+    required this.name,
+    required this.type,
+    required this.dateTime,
+    this.foodItems = const [],
+    this.notes,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  // Meal types
+  static const List<String> mealTypes = [
+    'breakfast', 'lunch', 'dinner', 'snack'
+  ];
+
+  // Calculate total nutrition for the meal
+  NutritionData get totalNutrition {
+    return foodItems.fold(
+      const NutritionData(),
+      (total, item) => total + item.adjustedNutrition,
+    );
+  }
+
+  // Convert to Firestore format
+  Map<String, dynamic> toFirestore() {
+    return {
+      'userId': userId,
+      'name': name,
+      'type': type,
+      'dateTime': dateTime,
+      'foodItems': foodItems.map((item) => item.toFirestore()).toList(),
+      'notes': notes,
+      'createdAt': createdAt ?? DateTime.now(),
+      'updatedAt': DateTime.now(),
+    };
+  }
+
+  // Create from Firestore document
+  factory Meal.fromFirestore(Map<String, dynamic> data, String id) {
+    return Meal(
+      id: id,
+      userId: data['userId'] ?? '',
+      name: data['name'] ?? '',
+      type: data['type'] ?? 'snack',
+      dateTime: data['dateTime'] != null
+          ? (data['dateTime'] as Timestamp).toDate()
+          : DateTime.now(),
+      foodItems: (data['foodItems'] as List<dynamic>?)
+          ?.map((item) => MealFoodItem.fromFirestore(item))
+          .toList() ?? [],
+      notes: data['notes'],
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : null,
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : null,
+    );
+  }
+
+  // Create new meal
+  factory Meal.create({
+    required String userId,
+    required String name,
+    required String type,
+    required DateTime dateTime,
+    List<MealFoodItem> foodItems = const [],
+    String? notes,
+  }) {
+    return Meal(
+      userId: userId,
+      name: name,
+      type: type,
+      dateTime: dateTime,
+      foodItems: foodItems,
+      notes: notes,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // Copy with method
+  Meal copyWith({
+    String? id,
+    String? userId,
+    String? name,
+    String? type,
+    DateTime? dateTime,
+    List<MealFoodItem>? foodItems,
+    String? notes,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Meal(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      dateTime: dateTime ?? this.dateTime,
+      foodItems: foodItems ?? this.foodItems,
+      notes: notes ?? this.notes,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  // Add food item to meal
+  Meal addFoodItem(MealFoodItem foodItem) {
+    return copyWith(foodItems: [...foodItems, foodItem]);
+  }
+
+  // Remove food item from meal
+  Meal removeFoodItem(String foodItemId) {
+    return copyWith(
+      foodItems: foodItems.where((item) => item.id != foodItemId).toList(),
+    );
+  }
+
+  // Update food item in meal
+  Meal updateFoodItem(MealFoodItem updatedItem) {
+    return copyWith(
+      foodItems: foodItems.map((item) =>
+        item.id == updatedItem.id ? updatedItem : item
+      ).toList(),
+    );
+  }
+}
+
+/// MealFoodItem - Food item within a meal with specific portion
+class MealFoodItem {
+  final String id;
+  final FoodItem foodItem;
+  final double portionSize; // in grams or serving units
+  final DateTime addedAt;
+
+  const MealFoodItem({
+    required this.id,
+    required this.foodItem,
+    required this.portionSize,
+    required this.addedAt,
+  });
+
+  // Get adjusted nutrition data for this portion
+  NutritionData get adjustedNutrition => foodItem.getNutritionForPortion(portionSize);
+
+  // Convert to Firestore format
+  Map<String, dynamic> toFirestore() {
+    return {
+      'id': id,
+      'foodItem': foodItem.toFirestore(),
+      'portionSize': portionSize,
+      'addedAt': addedAt,
+    };
+  }
+
+  // Create from Firestore document
+  factory MealFoodItem.fromFirestore(Map<String, dynamic> data) {
+    return MealFoodItem(
+      id: data['id'] ?? '',
+      foodItem: FoodItem.fromFirestore(data['foodItem'] ?? {}, data['foodItem']['id'] ?? ''),
+      portionSize: data['portionSize']?.toDouble() ?? 100.0,
+      addedAt: data['addedAt'] != null
+          ? (data['addedAt'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
+
+  // Create new meal food item
+  factory MealFoodItem.create({
+    required FoodItem foodItem,
+    required double portionSize,
+  }) {
+    return MealFoodItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      foodItem: foodItem,
+      portionSize: portionSize,
+      addedAt: DateTime.now(),
+    );
+  }
+
+  // Copy with method
+  MealFoodItem copyWith({
+    String? id,
+    FoodItem? foodItem,
+    double? portionSize,
+    DateTime? addedAt,
+  }) {
+    return MealFoodItem(
+      id: id ?? this.id,
+      foodItem: foodItem ?? this.foodItem,
+      portionSize: portionSize ?? this.portionSize,
+      addedAt: addedAt ?? this.addedAt,
+    );
+  }
+}
+
+/// Recipe - Collection of ingredients with instructions
+class Recipe {
+  final String? id;
+  final String userId;
+  final String name;
+  final String? description;
+  final List<RecipeIngredient> ingredients;
+  final List<String> instructions;
+  final int servings;
+  final int prepTimeMinutes;
+  final int cookTimeMinutes;
+  final List<String> tags; // ['vegetarian', 'gluten_free', 'high_protein', etc.]
+  final String? imageUrl;
+  final NutritionData totalNutrition; // per serving
+  final bool isPublic;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  const Recipe({
+    this.id,
+    required this.userId,
+    required this.name,
+    this.description,
+    this.ingredients = const [],
+    this.instructions = const [],
+    this.servings = 1,
+    this.prepTimeMinutes = 0,
+    this.cookTimeMinutes = 0,
+    this.tags = const [],
+    this.imageUrl,
+    required this.totalNutrition,
+    this.isPublic = false,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  // Calculate total nutrition from ingredients
+  static NutritionData calculateTotalNutrition(List<RecipeIngredient> ingredients, int servings) {
+    final total = ingredients.fold(
+      const NutritionData(),
+      (sum, ingredient) => sum + ingredient.adjustedNutrition,
+    );
+    // Divide by servings to get per-serving nutrition
+    return total * (1.0 / servings);
+  }
+
+  // Convert to Firestore format
+  Map<String, dynamic> toFirestore() {
+    return {
+      'userId': userId,
+      'name': name,
+      'description': description,
+      'ingredients': ingredients.map((item) => item.toFirestore()).toList(),
+      'instructions': instructions,
+      'servings': servings,
+      'prepTimeMinutes': prepTimeMinutes,
+      'cookTimeMinutes': cookTimeMinutes,
+      'tags': tags,
+      'imageUrl': imageUrl,
+      'totalNutrition': totalNutrition.toFirestore(),
+      'isPublic': isPublic,
+      'createdAt': createdAt ?? DateTime.now(),
+      'updatedAt': DateTime.now(),
+    };
+  }
+
+  // Create from Firestore document
+  factory Recipe.fromFirestore(Map<String, dynamic> data, String id) {
+    return Recipe(
+      id: id,
+      userId: data['userId'] ?? '',
+      name: data['name'] ?? '',
+      description: data['description'],
+      ingredients: (data['ingredients'] as List<dynamic>?)
+          ?.map((item) => RecipeIngredient.fromFirestore(item))
+          .toList() ?? [],
+      instructions: List<String>.from(data['instructions'] ?? []),
+      servings: data['servings'] ?? 1,
+      prepTimeMinutes: data['prepTimeMinutes'] ?? 0,
+      cookTimeMinutes: data['cookTimeMinutes'] ?? 0,
+      tags: List<String>.from(data['tags'] ?? []),
+      imageUrl: data['imageUrl'],
+      totalNutrition: NutritionData.fromFirestore(data['totalNutrition'] ?? {}),
+      isPublic: data['isPublic'] ?? false,
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : null,
+      updatedAt: data['updatedAt'] != null
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : null,
+    );
+  }
+
+  // Create new recipe
+  factory Recipe.create({
+    required String userId,
+    required String name,
+    String? description,
+    List<RecipeIngredient> ingredients = const [],
+    List<String> instructions = const [],
+    int servings = 1,
+    int prepTimeMinutes = 0,
+    int cookTimeMinutes = 0,
+    List<String> tags = const [],
+    String? imageUrl,
+    bool isPublic = false,
+  }) {
+    final totalNutrition = calculateTotalNutrition(ingredients, servings);
+    return Recipe(
+      userId: userId,
+      name: name,
+      description: description,
+      ingredients: ingredients,
+      instructions: instructions,
+      servings: servings,
+      prepTimeMinutes: prepTimeMinutes,
+      cookTimeMinutes: cookTimeMinutes,
+      tags: tags,
+      imageUrl: imageUrl,
+      totalNutrition: totalNutrition,
+      isPublic: isPublic,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  // Copy with method
+  Recipe copyWith({
+    String? id,
+    String? userId,
+    String? name,
+    String? description,
+    List<RecipeIngredient>? ingredients,
+    List<String>? instructions,
+    int? servings,
+    int? prepTimeMinutes,
+    int? cookTimeMinutes,
+    List<String>? tags,
+    String? imageUrl,
+    NutritionData? totalNutrition,
+    bool? isPublic,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Recipe(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      ingredients: ingredients ?? this.ingredients,
+      instructions: instructions ?? this.instructions,
+      servings: servings ?? this.servings,
+      prepTimeMinutes: prepTimeMinutes ?? this.prepTimeMinutes,
+      cookTimeMinutes: cookTimeMinutes ?? this.cookTimeMinutes,
+      tags: tags ?? this.tags,
+      imageUrl: imageUrl ?? this.imageUrl,
+      totalNutrition: totalNutrition ?? this.totalNutrition,
+      isPublic: isPublic ?? this.isPublic,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  // Get total time in minutes
+  int get totalTimeMinutes => prepTimeMinutes + cookTimeMinutes;
+
+  // Get formatted time strings
+  String get prepTimeDisplay => prepTimeMinutes > 0 ? '${prepTimeMinutes}min prep' : '';
+  String get cookTimeDisplay => cookTimeMinutes > 0 ? '${cookTimeMinutes}min cook' : '';
+  String get totalTimeDisplay {
+    final total = totalTimeMinutes;
+    if (total == 0) return '';
+    if (total < 60) return '${total}min';
+    final hours = total ~/ 60;
+    final minutes = total % 60;
+    return minutes > 0 ? '${hours}h ${minutes}min' : '${hours}h';
+  }
+}
+
+/// RecipeIngredient - Ingredient within a recipe
+class RecipeIngredient {
+  final String id;
+  final FoodItem foodItem;
+  final double amount; // in grams or serving units
+  final String? notes; // e.g., "chopped", "diced"
+  final DateTime addedAt;
+
+  const RecipeIngredient({
+    required this.id,
+    required this.foodItem,
+    required this.amount,
+    this.notes,
+    required this.addedAt,
+  });
+
+  // Get adjusted nutrition data for this ingredient amount
+  NutritionData get adjustedNutrition => foodItem.getNutritionForPortion(amount);
+
+  // Convert to Firestore format
+  Map<String, dynamic> toFirestore() {
+    return {
+      'id': id,
+      'foodItem': foodItem.toFirestore(),
+      'amount': amount,
+      'notes': notes,
+      'addedAt': addedAt,
+    };
+  }
+
+  // Create from Firestore document
+  factory RecipeIngredient.fromFirestore(Map<String, dynamic> data) {
+    return RecipeIngredient(
+      id: data['id'] ?? '',
+      foodItem: FoodItem.fromFirestore(data['foodItem'] ?? {}, data['foodItem']['id'] ?? ''),
+      amount: data['amount']?.toDouble() ?? 0.0,
+      notes: data['notes'],
+      addedAt: data['addedAt'] != null
+          ? (data['addedAt'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
+
+  // Create new recipe ingredient
+  factory RecipeIngredient.create({
+    required FoodItem foodItem,
+    required double amount,
+    String? notes,
+  }) {
+    return RecipeIngredient(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      foodItem: foodItem,
+      amount: amount,
+      notes: notes,
+      addedAt: DateTime.now(),
+    );
+  }
+
+  // Copy with method
+  RecipeIngredient copyWith({
+    String? id,
+    FoodItem? foodItem,
+    double? amount,
+    String? notes,
+    DateTime? addedAt,
+  }) {
+    return RecipeIngredient(
+      id: id ?? this.id,
+      foodItem: foodItem ?? this.foodItem,
+      amount: amount ?? this.amount,
+      notes: notes ?? this.notes,
+      addedAt: addedAt ?? this.addedAt,
     );
   }
 }

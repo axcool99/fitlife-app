@@ -7,6 +7,8 @@ import '../../services/gamification_service.dart';
 import '../../models/badge.dart' as badge_model;
 import '../../services/ai_service.dart';
 import '../../main.dart'; // Import for getIt
+import '../../home_screen.dart';
+import '../../progress_screen.dart';
 
 class AddWorkoutDialog extends StatefulWidget {
   final WorkoutSuggestion? suggestion;
@@ -68,6 +70,10 @@ class _AddWorkoutDialogState extends State<AddWorkoutDialog> {
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
       );
 
+      // Track this workout in AI service to avoid repetition
+      final aiService = getIt<AIService>();
+      aiService.trackRecentlyAddedWorkout(_exerciseController.text.trim());
+
       // Check for new badges after workout is added
       final gamificationService = getIt<GamificationService>();
       final newBadges = await gamificationService.checkAndAwardBadges();
@@ -81,6 +87,11 @@ class _AddWorkoutDialogState extends State<AddWorkoutDialog> {
             const SnackBar(content: Text('Workout added successfully!')),
           );
         }
+        
+        // Refresh home screen and progress screen data
+        HomeScreen.refreshData();
+        ProgressScreen.refreshData();
+        
         Navigator.of(context).pop();
       }
     } catch (e) {

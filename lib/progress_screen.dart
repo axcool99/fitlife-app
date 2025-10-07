@@ -12,11 +12,20 @@ enum TimeRange { week, month, threeMonths }
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
 
+  // Global key to access ProgressScreen state from anywhere
+  static final GlobalKey<_ProgressScreenState> screenKey = GlobalKey<_ProgressScreenState>();
+
+  // Static method to refresh progress screen data
+  static void refreshData() {
+    screenKey.currentState?._refreshData();
+  }
+
   @override
-  _ProgressScreenState createState() => _ProgressScreenState();
+  _ProgressScreenState createState() => _ProgressScreenState(key: screenKey);
 }
 
 class _ProgressScreenState extends State<ProgressScreen> {
+  _ProgressScreenState({Key? key}) : super();
   final AnalyticsService _analyticsService = getIt<AnalyticsService>();
   final NetworkService _networkService = getIt<NetworkService>();
   final SyncService _syncService = getIt<SyncService>();
@@ -57,6 +66,14 @@ class _ProgressScreenState extends State<ProgressScreen> {
           _isOnline = false;
         });
       }
+    }
+  }
+
+  void _refreshData() {
+    if (mounted) {
+      setState(() {
+        // Force rebuild to refresh all FutureBuilder widgets
+      });
     }
   }
 

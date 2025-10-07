@@ -13,11 +13,20 @@ import 'workout_screen.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  // Global key to access HomeScreen state from anywhere
+  static final GlobalKey<_HomeScreenState> screenKey = GlobalKey<_HomeScreenState>();
+
+  // Static method to refresh home screen data
+  static void refreshData() {
+    screenKey.currentState?._refreshData();
+  }
+
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  _HomeScreenState createState() => _HomeScreenState(key: screenKey);
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  _HomeScreenState({Key? key}) : super();
   final FitnessDataService _fitnessDataService = getIt<FitnessDataService>();
   final ProfileService _profileService = getIt<ProfileService>();
   final CheckInService _checkInService = getIt<CheckInService>();
@@ -91,6 +100,20 @@ class _HomeScreenState extends State<HomeScreen> {
           _isOnline = false;
         });
       }
+    }
+  }
+
+  void _refreshData() {
+    if (mounted) {
+      setState(() {
+        // Reinitialize futures to refresh data
+        _initializeFutures();
+        // Also refresh workout suggestions specifically
+        _workoutSuggestionsFuture = _aiService.getFreshWorkoutSuggestions(limit: 1).timeout(
+          const Duration(seconds: 10),
+          onTimeout: () => <WorkoutSuggestion>[],
+        );
+      });
     }
   }
 

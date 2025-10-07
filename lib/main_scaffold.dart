@@ -4,6 +4,7 @@ import 'workout_screen.dart';
 import 'checkin_screen.dart';
 import 'progress_screen.dart';
 import 'profile_screen.dart';
+import 'nutrition_screen.dart';
 import 'ui/theme/theme.dart';
 
 /// MainScaffold - Main app scaffold with bottom navigation
@@ -28,10 +29,11 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   // List of screens for IndexedStack (preserves state)
   final List<Widget> _screens = [
-    const HomeScreen(),
+    HomeScreen(key: HomeScreen.screenKey),
     WorkoutScreen(key: WorkoutScreen.screenKey),
     const CheckInScreen(),
-    const ProgressScreen(),
+    const NutritionScreen(),
+    ProgressScreen(key: ProgressScreen.screenKey),
     const ProfileScreen(),
   ];
 
@@ -51,6 +53,11 @@ class _MainScaffoldState extends State<MainScaffold> {
       icon: Icon(Icons.assignment_turned_in_outlined),
       activeIcon: Icon(Icons.assignment_turned_in),
       label: 'Check-ins',
+    ),
+    const BottomNavigationBarItem(
+      icon: Icon(Icons.restaurant_outlined),
+      activeIcon: Icon(Icons.restaurant),
+      label: 'Nutrition',
     ),
     const BottomNavigationBarItem(
       icon: Icon(Icons.show_chart_outlined),

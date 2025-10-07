@@ -15,6 +15,10 @@ class AIService {
 
   String? get currentUserId => _auth.currentUser?.uid;
 
+  // Track recently added workouts to avoid repetition
+  final List<String> _recentlyAddedExercises = [];
+  DateTime? _lastSuggestionRefresh;
+
   // Common exercise categories and their variations
   static const Map<String, List<String>> exerciseCategories = {
     'upper_body': [
@@ -117,6 +121,37 @@ class AIService {
       print('Error generating workout suggestions: $e');
       return _getDefaultSuggestions();
     }
+  }
+
+  /// Track a recently added workout to avoid repetition in future suggestions
+  void trackRecentlyAddedWorkout(String exerciseName) {
+    final normalizedExercise = _normalizeExerciseName(exerciseName);
+    _recentlyAddedExercises.add(normalizedExercise);
+
+    // Keep only the last 10 exercises to avoid memory issues and allow some repetition over time
+    if (_recentlyAddedExercises.length > 10) {
+      _recentlyAddedExercises.removeAt(0);
+    }
+
+    _lastSuggestionRefresh = DateTime.now();
+  }
+
+  /// Check if an exercise was recently added
+  bool wasRecentlyAdded(String exerciseName) {
+    final normalizedExercise = _normalizeExerciseName(exerciseName);
+    return _recentlyAddedExercises.contains(normalizedExercise);
+  }
+
+  /// Get fresh workout suggestions, avoiding recently added exercises
+  Future<List<WorkoutSuggestion>> getFreshWorkoutSuggestions({int limit = 3}) async {
+    // Force refresh by clearing any cached data considerations
+    _lastSuggestionRefresh = DateTime.now();
+    return getWorkoutSuggestions(limit: limit);
+  }
+
+  /// Normalize exercise names for better matching
+  String _normalizeExerciseName(String exerciseName) {
+    return exerciseName.toLowerCase().trim();
   }
 
   /// Enhanced goal-based suggestions with detailed analysis
@@ -696,9 +731,10 @@ class AIService {
     List<WorkoutSuggestion> suggestions,
     UserPreferences preferences,
   ) {
-    // Filter out disliked exercises
+    // Filter out disliked exercises and recently added exercises
     final filtered = suggestions.where((suggestion) {
-      return !preferences.dislikesExercise(suggestion.exerciseName);
+      return !preferences.dislikesExercise(suggestion.exerciseName) &&
+             !wasRecentlyAdded(suggestion.exerciseName);
     }).toList();
 
     // Rank by preference score
@@ -729,12 +765,83 @@ class AIService {
           .where((w) => w.exerciseName.toLowerCase() == suggestion.exerciseName.toLowerCase())
           .length;
 
+      // Enhance the reason based on recent activity and context
+      final enhancedReason = _enhanceSuggestionReason(
+        suggestion.reason,
+        suggestion.exerciseName,
+        lastPerformed,
+        timesPerformed,
+        recentWorkouts,
+        preferences
+      );
+
       return suggestion.copyWith(
+        reason: enhancedReason,
         confidenceScore: (suggestion.confidenceScore * completionRate).clamp(0.0, 1.0),
         lastPerformed: lastPerformed,
         timesPerformed: timesPerformed,
       );
     }).toList();
+  }
+
+  /// Enhance suggestion reasons based on context and recent activity
+  String _enhanceSuggestionReason(
+    String baseReason,
+    String exerciseName,
+    DateTime? lastPerformed,
+    int timesPerformed,
+    List<Workout> recentWorkouts,
+    UserPreferences preferences,
+  ) {
+    final now = DateTime.now();
+    final daysSinceLastPerformed = lastPerformed != null
+        ? now.difference(lastPerformed).inDays
+        : null;
+
+    // Check if this exercise was recently added (avoid immediate repetition)
+    final wasRecentlyAdded = this.wasRecentlyAdded(exerciseName);
+
+    // Analyze recent workout patterns
+    final recentCategories = recentWorkouts
+        .take(5) // Last 5 workouts
+        .map((w) => _getExerciseCategory(w.exerciseName))
+        .toSet();
+
+    final currentCategory = _getExerciseCategory(exerciseName);
+    final categoryBalance = recentCategories.contains(currentCategory) ? 'continuing' : 'balancing';
+
+    // Build enhanced reason
+    final reasons = <String>[baseReason];
+
+    // Add context based on recent activity
+    if (wasRecentlyAdded) {
+      reasons.add("Great job completing this recently! Let's build on that momentum.");
+    } else if (daysSinceLastPerformed != null) {
+      if (daysSinceLastPerformed > 7) {
+        reasons.add("It's been ${daysSinceLastPerformed} days since you last did this - perfect time to get back to it!");
+      } else if (daysSinceLastPerformed <= 1) {
+        reasons.add("You've been consistent with this exercise - let's maintain that streak!");
+      }
+    }
+
+    // Add variety consideration
+    if (categoryBalance == 'balancing') {
+      reasons.add("This will help balance your recent focus on ${recentCategories.join(' and ')} exercises.");
+    }
+
+    // Add progression insight
+    if (timesPerformed > 10) {
+      reasons.add("You've mastered the basics - time to focus on proper form and progression.");
+    } else if (timesPerformed > 5) {
+      reasons.add("You're getting comfortable with this movement - consider increasing intensity.");
+    }
+
+    // Add preference-based context
+    if (preferences.likesExercise(exerciseName)) {
+      reasons.add("Based on your preferences, this is one of your favorite exercises!");
+    }
+
+    return reasons.join(' ');
   }
 
   /// Helper methods for advanced analysis

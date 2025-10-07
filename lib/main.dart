@@ -23,6 +23,8 @@ import 'services/analytics_service.dart'; // Import analytics service
 import 'services/user_preferences_service.dart'; // Import user preferences service
 import 'services/ai_service.dart'; // Import AI service
 import 'services/gamification_service.dart'; // Import gamification service
+import 'services/nutrition_service.dart'; // Import nutrition service
+import 'nutrition_screen.dart'; // Import nutrition screen
 
 /// Global service locator instance
 final getIt = GetIt.instance;
@@ -48,6 +50,7 @@ void main() async {
   getIt.registerSingleton<AnalyticsService>(AnalyticsService(getIt<CacheService>(), getIt<NetworkService>()));
   getIt.registerSingleton<AIService>(AIService(getIt<AnalyticsService>(), getIt<ProfileService>(), getIt<UserPreferencesService>()));
   getIt.registerSingleton<GamificationService>(GamificationService(getIt<AnalyticsService>()));
+  getIt.registerSingleton<NutritionService>(NutritionService(getIt<CacheService>(), getIt<NetworkService>()));
   getIt.registerSingleton<SyncService>(SyncService(
     getIt<CacheService>(),
     getIt<WorkoutService>(),
@@ -74,6 +77,7 @@ class MyApp extends StatelessWidget {
         '/progress': (context) => const ProgressScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/checkin': (context) => const CheckInScreen(),
+        '/nutrition': (context) => const NutritionScreen(),
       },
       onGenerateRoute: (settings) {
         // Custom transitions for different routes
@@ -89,6 +93,8 @@ class MyApp extends StatelessWidget {
             return FitLifeTransitions.slideRightToLeft(ProfileScreen());
           case '/checkin':
             return FitLifeTransitions.slideRightToLeft(CheckInScreen());
+          case '/nutrition':
+            return FitLifeTransitions.slideRightToLeft(NutritionScreen());
           default:
             return MaterialPageRoute(
               builder: (context) => const AuthWrapper(),
