@@ -144,14 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: FitLifeTheme.background,
-      appBar: FitLifeAppBar(
-        title: 'Welcome, $userName',
-        centerTitle: false, // Left align the title
-        automaticallyImplyLeading: false, // No back button
-      ),
-      body: StreamBuilder<FitnessData?>(
+    return StreamBuilder<FitnessData?>(
         stream: _fitnessDataService.getTodayFitnessData(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -1264,8 +1257,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
-      ),
-    );
+      );
   }
 
   /// Generate chart data from weekly weight check-ins

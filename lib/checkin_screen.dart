@@ -81,10 +81,6 @@ class _CheckInScreenState extends State<CheckInScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FitLifeTheme.background,
-      appBar: FitLifeAppBar(
-        title: 'Daily Check-In',
-        automaticallyImplyLeading: false,
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(FitLifeTheme.spacingL),
         child: Form(

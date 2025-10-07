@@ -203,10 +203,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FitLifeTheme.background,
-      appBar: FitLifeAppBar(
-        title: 'Your Workouts',
-        automaticallyImplyLeading: false,
-      ),
       body: Column(
         children: [
           // Offline indicator

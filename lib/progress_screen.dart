@@ -125,10 +125,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FitLifeTheme.background,
-      appBar: FitLifeAppBar(
-        title: 'Progress & Analytics',
-        automaticallyImplyLeading: false,
-      ),
       body: Column(
         children: [
           if (!_isOnline) ...[

@@ -1619,10 +1619,19 @@ class HealthData {
 
   // Create from Firestore document
   factory HealthData.fromFirestore(Map<String, dynamic> data) {
+    DateTime date;
+    if (data['date'] is Timestamp) {
+      date = (data['date'] as Timestamp).toDate();
+    } else if (data['date'] is DateTime) {
+      date = data['date'] as DateTime;
+    } else if (data['date'] is String) {
+      date = DateTime.parse(data['date']);
+    } else {
+      date = DateTime.now(); // fallback
+    }
+
     return HealthData(
-      date: data['date'] is Timestamp
-          ? (data['date'] as Timestamp).toDate()
-          : DateTime.parse(data['date']),
+      date: date,
       steps: data['steps'] ?? 0,
       caloriesBurned: data['caloriesBurned']?.toDouble() ?? 0.0,
       restingHeartRate: data['restingHeartRate']?.toDouble() ?? 0.0,

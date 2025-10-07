@@ -166,28 +166,6 @@ class _NutritionScreenState extends State<NutritionScreen> with TickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: FitLifeAppBar(
-        title: 'Nutrition',
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: _selectedDate,
-                firstDate: DateTime(2020),
-                lastDate: DateTime.now().add(const Duration(days: 7)),
-              );
-              if (picked != null && picked != _selectedDate) {
-                setState(() {
-                  _selectedDate = picked;
-                });
-                _loadData();
-              }
-            },
-          ),
-        ],
-      ),
       body: Column(
         children: [
           // Date selector

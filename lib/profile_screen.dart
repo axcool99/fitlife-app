@@ -83,6 +83,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: FitLifeTheme.background,
       appBar: FitLifeAppBar(
         title: 'Profile',
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+          tooltip: 'Back',
+        ),
         automaticallyImplyLeading: false,
       ),
       body: _isLoading
