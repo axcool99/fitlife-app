@@ -227,12 +227,6 @@ class _NutritionScreenState extends State<NutritionScreen> with TickerProviderSt
         ],
       ),
 
-      // Floating action button for adding meals
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddMealMenu(),
-        backgroundColor: FitLifeTheme.accentGreen,
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
