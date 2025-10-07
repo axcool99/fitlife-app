@@ -183,7 +183,9 @@ class WearableSyncService {
       final cachedData = await _cacheService.loadData(cacheKey);
 
       if (cachedData != null) {
-        return HealthData.fromFirestore(cachedData);
+        // Ensure proper type casting for cached data
+        final Map<String, dynamic> typedData = Map<String, dynamic>.from(cachedData);
+        return HealthData.fromFirestore(typedData);
       }
     } catch (e) {
       print('Error loading cached health data: $e');
