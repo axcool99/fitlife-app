@@ -11,7 +11,7 @@ class WorkoutService {
   final FitnessDataService _fitnessDataService;
   final CacheService _cacheService;
 
-  WorkoutService(this._cacheService) : _fitnessDataService = FitnessDataService();
+  WorkoutService(this._cacheService, this._fitnessDataService);
 
   // Get current user ID
   String? get currentUserId => _auth.currentUser?.uid;

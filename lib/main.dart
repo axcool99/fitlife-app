@@ -51,8 +51,8 @@ void main() async {
   getIt.registerSingleton<CacheService>(cacheService);
   getIt.registerSingleton<HealthService>(healthService);
   getIt.registerSingleton<WearableSyncService>(wearableSyncService);
-  getIt.registerSingleton<FitnessDataService>(FitnessDataService());
-  getIt.registerSingleton<WorkoutService>(WorkoutService(getIt<CacheService>()));
+  getIt.registerSingleton<FitnessDataService>(FitnessDataService(wearableSyncService));
+  getIt.registerSingleton<WorkoutService>(WorkoutService(getIt<CacheService>(), getIt<FitnessDataService>()));
   getIt.registerSingleton<CheckInService>(CheckInService(getIt<CacheService>()));
   getIt.registerSingleton<ProfileService>(ProfileService());
   getIt.registerSingleton<UserPreferencesService>(UserPreferencesService(getIt<CacheService>()));
