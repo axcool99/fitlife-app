@@ -188,7 +188,7 @@ class CacheService {
     try {
       await _box.put('checkins', {
         'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        'data': checkIns,
+        'data': checkIns.map((c) => c.toFirestore()).toList(),
         'ttl': 604800,
       });
     } catch (e) {
@@ -202,7 +202,8 @@ class CacheService {
     try {
       final cachedItem = _box.get('checkins');
       if (cachedItem != null && isCacheValid(cachedItem)) {
-        return cachedItem['data'] as List<dynamic>;
+        final data = cachedItem['data'] as List;
+        return data.map((m) => CheckIn.fromMap(m as Map<String, dynamic>, 'cached')).toList();
       }
       return [];
     } catch (e) {
@@ -217,7 +218,7 @@ class CacheService {
     try {
       await _box.put('checkin_${checkIn.id}', {
         'timestamp': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        'data': checkIn,
+        'data': checkIn.toFirestore(),
         'ttl': 604800,
       });
     } catch (e) {

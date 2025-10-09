@@ -36,13 +36,13 @@ class FitLifeTheme {
     displayLarge: TextStyle(
       fontFamily: fontFamily,
       fontWeight: FontWeight.bold,
-      fontSize: 28,
+      fontSize: 24,
       color: primaryText,
     ),
     displayMedium: TextStyle(
       fontFamily: fontFamily,
       fontWeight: FontWeight.bold,
-      fontSize: 24,
+      fontSize: 18,
       color: primaryText,
     ),
     bodyLarge: TextStyle(
@@ -65,19 +65,19 @@ class FitLifeTheme {
 
   // ===== COMPONENT COMPATIBILITY TYPOGRAPHY =====
   static TextStyle get headingLarge => GoogleFonts.poppins(
-    fontSize: 32,
-    fontWeight: FontWeight.bold,
-    color: textPrimary,
-  );
-
-  static TextStyle get headingMedium => GoogleFonts.poppins(
     fontSize: 24,
     fontWeight: FontWeight.bold,
     color: textPrimary,
   );
 
-  static TextStyle get headingSmall => GoogleFonts.poppins(
+  static TextStyle get headingMedium => GoogleFonts.poppins(
     fontSize: 20,
+    fontWeight: FontWeight.bold,
+    color: textPrimary,
+  );
+
+  static TextStyle get headingSmall => GoogleFonts.poppins(
+    fontSize: 18,
     fontWeight: FontWeight.bold,
     color: textPrimary,
   );

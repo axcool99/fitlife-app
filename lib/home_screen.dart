@@ -478,7 +478,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     color: FitLifeTheme.primaryText,
                                     useCleanStyle: true,
                                   ),
-                                  if (summary.recentBadges.isNotEmpty)
+                                  if (summary.totalBadges > 0)
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: FitLifeTheme.spacingS,
@@ -497,7 +497,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                           const SizedBox(width: 4),
                                           AppText(
-                                            '${summary.recentBadges.length}',
+                                            '${summary.totalBadges}',
                                             type: AppTextType.bodySmall,
                                             color: FitLifeTheme.accentGreen,
                                             useCleanStyle: true,
@@ -580,11 +580,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ],
                               ),
 
-                              // Recent Badges
-                              if (summary.recentBadges.isNotEmpty) ...[
+                              // Badges
+                              if (summary.totalBadges > 0) ...[
                                 const SizedBox(height: FitLifeTheme.spacingL),
                                 AppText(
-                                  'Recent Badges',
+                                  'Badges',
                                   type: AppTextType.bodyMedium,
                                   color: FitLifeTheme.primaryText,
                                   useCleanStyle: true,
@@ -1650,6 +1650,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'emoji_events':
         return Icons.emoji_events;
       case 'fitness_center':
+      case 'fitness_centre': // Handle British spelling variant
         return Icons.fitness_center;
       case 'sports_handball':
         return Icons.sports_handball;

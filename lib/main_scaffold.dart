@@ -89,15 +89,24 @@ class _MainScaffoldState extends State<MainScaffold> {
         index: _selectedIndex,
         children: _screens,
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: FitLifeTheme.surfaceColor,
-        selectedItemColor: FitLifeTheme.accentGreen,
-        unselectedItemColor: FitLifeTheme.textSecondary,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        showUnselectedLabels: true,
-        items: _navItems,
+      bottomNavigationBar: Theme(
+        data: Theme.of(context).copyWith(
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+        ),
+        child: BottomNavigationBar(
+          backgroundColor: FitLifeTheme.surfaceColor,
+          selectedItemColor: FitLifeTheme.accentGreen,
+          unselectedItemColor: FitLifeTheme.textSecondary,
+          currentIndex: _selectedIndex,
+          onTap: _onItemTapped,
+          type: BottomNavigationBarType.fixed,
+          showUnselectedLabels: true,
+          iconSize: 20, // Smaller icons
+          selectedFontSize: 10, // Smaller selected text
+          unselectedFontSize: 10, // Smaller unselected text
+          items: _navItems,
+        ),
       ),
     );
   }

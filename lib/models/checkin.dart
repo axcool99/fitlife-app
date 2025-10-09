@@ -53,6 +53,22 @@ class CheckIn {
     );
   }
 
+  // Create from map (for cache deserialization)
+  factory CheckIn.fromMap(Map<String, dynamic> data, String id) {
+    return CheckIn(
+      id: id,
+      userId: data['userId'] ?? '',
+      // Use 'timestamp' field if available, otherwise fall back to 'date'
+      date: (data['timestamp'] as Timestamp?)?.toDate() ??
+            (data['date'] as Timestamp?)?.toDate() ??
+            DateTime.now(),
+      weight: (data['weight'] as num?)?.toDouble() ?? 0.0,
+      mood: data['mood'] ?? 'Okay',
+      energyLevel: data['energyLevel'] ?? 3,
+      notes: data['notes'],
+    );
+  }
+
   // Convert to Firestore data
   Map<String, dynamic> toFirestore() {
     return {

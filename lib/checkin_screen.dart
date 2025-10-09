@@ -310,6 +310,9 @@ class _CheckInScreenState extends State<CheckInScreen> {
                   icon: Icons.check,
                   onPressed: _isLoading ? null : _submitCheckIn,
                   isLoading: _isLoading,
+                  height: 44, // Smaller height
+                  textSize: 14, // Smaller text
+                  iconPadding: 8, // Less padding between icon and text
                 ),
               ),
 

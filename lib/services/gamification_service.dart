@@ -331,9 +331,7 @@ class GamificationService {
       currentStreak: streak.current,
       longestStreak: streak.longest,
       totalBadges: badges.length,
-      recentBadges: badges.where((badge) =>
-        badge.earnedAt.isAfter(DateTime.now().subtract(const Duration(days: 7)))
-      ).toList(),
+      recentBadges: badges, // Show all badges instead of just recent ones
       totalWorkouts: totalWorkouts,
     );
   }
