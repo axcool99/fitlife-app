@@ -64,13 +64,27 @@ body {
     padding: var(--spacing-s) 0;
 }
 
-.logo-text {
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-image {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.brand-name {
     font-size: 24px;
     font-weight: 700;
+    margin: 0;
     background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .nav-links {
@@ -498,6 +512,29 @@ body {
     padding: var(--spacing-xxl) 0;
     background: linear-gradient(135deg, rgba(0, 255, 133, 0.05), rgba(30, 144, 255, 0.05));
     text-align: center;
+    position: relative;
+    overflow: hidden;
+    padding: 8rem 0;
+}
+
+.download::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('assets/device.jpg');
+    background-size: cover;
+    background-position: bottom center;
+    background-repeat: no-repeat;
+    opacity: 0.1;
+    z-index: 1;
+}
+
+.download .container {
+    position: relative;
+    z-index: 2;
 }
 
 .download-content {
@@ -561,6 +598,29 @@ body {
     grid-template-columns: 2fr 3fr;
     gap: var(--spacing-xxl);
     margin-bottom: var(--spacing-l);
+}
+
+.footer-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: var(--spacing-xs);
+}
+
+.footer-logo-image {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.footer-brand-name {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+    background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .footer-brand p {

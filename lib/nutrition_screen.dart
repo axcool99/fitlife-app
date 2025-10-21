@@ -321,7 +321,7 @@ class _NutritionScreenState extends State<NutritionScreen> with TickerProviderSt
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.chevron_left),
+                  icon: const Icon(Icons.chevron_left, size: 24),
                   onPressed: () => _changeDate(-1),
                 ),
                 Text(
@@ -331,7 +331,7 @@ class _NutritionScreenState extends State<NutritionScreen> with TickerProviderSt
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chevron_right),
+                  icon: const Icon(Icons.chevron_right, size: 24),
                   onPressed: _selectedDate.isBefore(DateTime.now().add(const Duration(days: 1)))
                       ? () => _changeDate(1)
                       : null,
