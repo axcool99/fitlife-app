@@ -200,7 +200,7 @@ class _DeviceConnectionScreenState extends State<DeviceConnectionScreen> {
                             ),
                             const SizedBox(height: FitLifeTheme.spacingS),
                             AppText(
-                              'Allow FitLife to access your health data for accurate tracking.',
+                              'Allow Momentum to access your health data for accurate tracking.',
                               type: AppTextType.bodySmall,
                               color: FitLifeTheme.primaryText.withOpacity(0.7),
                               useCleanStyle: true,

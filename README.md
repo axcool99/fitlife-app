@@ -1,6 +1,6 @@
-# FitLife - Fitness Tracking App
+# Momentum - Fitness Tracking App
 
-A comprehensive Flutter fitness tracking application with Firebase backend integration.
+Find Your Flow - A comprehensive Flutter fitness tracking application with Firebase backend integration.
 
 ## Getting Started
 

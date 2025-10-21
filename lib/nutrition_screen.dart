@@ -42,7 +42,7 @@ class _NutritionScreenState extends State<NutritionScreen> with TickerProviderSt
     _tabController = TabController(length: 3, vsync: this);
     _checkConnectivity();
     _setupConnectivityListener();
-    _loadData();
+    _createDemoData(); // Load demo data instead of real data
   }
 
   @override
@@ -80,6 +80,146 @@ class _NutritionScreenState extends State<NutritionScreen> with TickerProviderSt
     _loadDailyNutrition();
     _loadNutritionTrends();
     _loadUserRecipes();
+  }
+
+  // Temporary method to create demo data
+  void _createDemoData() {
+    // Demo meals for today
+    final demoMeals = [
+      Meal.create(
+        userId: 'demo_user',
+        name: 'Breakfast Bowl',
+        type: 'breakfast',
+        dateTime: DateTime.now().subtract(const Duration(hours: 8)),
+        foodItems: [
+          MealFoodItem(
+            id: 'demo_oatmeal_item',
+            foodItem: FoodItem(
+              id: 'demo_oatmeal',
+              name: 'Oatmeal',
+              brand: 'Generic',
+              servingSize: 40,
+              servingUnit: 'g',
+              nutritionData: const NutritionData(calories: 150, protein: 5, carbs: 27, fat: 3),
+              isCustom: false,
+            ),
+            portionSize: 40,
+            addedAt: DateTime.now(),
+          ),
+          MealFoodItem(
+            id: 'demo_banana_item',
+            foodItem: FoodItem(
+              id: 'demo_banana',
+              name: 'Banana',
+              brand: 'Generic',
+              servingSize: 118,
+              servingUnit: 'g',
+              nutritionData: const NutritionData(calories: 105, protein: 1.3, carbs: 27, fat: 0.4),
+              isCustom: false,
+            ),
+            portionSize: 118,
+            addedAt: DateTime.now(),
+          ),
+        ],
+      ),
+      Meal.create(
+        userId: 'demo_user',
+        name: 'Grilled Chicken Salad',
+        type: 'lunch',
+        dateTime: DateTime.now().subtract(const Duration(hours: 4)),
+        foodItems: [
+          MealFoodItem(
+            id: 'demo_chicken_item',
+            foodItem: FoodItem(
+              id: 'demo_chicken',
+              name: 'Grilled Chicken Breast',
+              brand: 'Generic',
+              servingSize: 100,
+              servingUnit: 'g',
+              nutritionData: const NutritionData(calories: 165, protein: 31, carbs: 0, fat: 3.6),
+              isCustom: false,
+            ),
+            portionSize: 150,
+            addedAt: DateTime.now(),
+          ),
+          MealFoodItem(
+            id: 'demo_salad_item',
+            foodItem: FoodItem(
+              id: 'demo_salad',
+              name: 'Mixed Salad Greens',
+              brand: 'Generic',
+              servingSize: 100,
+              servingUnit: 'g',
+              nutritionData: const NutritionData(calories: 15, protein: 1.4, carbs: 2.9, fat: 0.2),
+              isCustom: false,
+            ),
+            portionSize: 200,
+            addedAt: DateTime.now(),
+          ),
+        ],
+      ),
+      Meal.create(
+        userId: 'demo_user',
+        name: 'Protein Shake',
+        type: 'snack',
+        dateTime: DateTime.now().subtract(const Duration(hours: 2)),
+        foodItems: [
+          MealFoodItem(
+            id: 'demo_protein_item',
+            foodItem: FoodItem(
+              id: 'demo_protein',
+              name: 'Whey Protein Powder',
+              brand: 'Generic',
+              servingSize: 30,
+              servingUnit: 'g',
+              nutritionData: const NutritionData(calories: 120, protein: 24, carbs: 3, fat: 1.5),
+              isCustom: false,
+            ),
+            portionSize: 30,
+            addedAt: DateTime.now(),
+          ),
+        ],
+      ),
+    ];
+
+    // Demo nutrition trends for the past 30 days with realistic random variation
+    final demoTrends = <Map<String, dynamic>>[];
+    final random = DateTime.now().millisecondsSinceEpoch; // Use timestamp as seed
+
+    for (int i = 29; i >= 0; i--) {
+      final date = DateTime.now().subtract(Duration(days: i));
+
+      // Create more realistic calorie variation using a seeded approach
+      final baseCalories = 2000.0;
+      final dayVariation = (random + i * 37) % 400 - 200; // -200 to +200 variation
+      final weeklyPattern = (i % 7) * 30 - 90; // Weekend eating pattern
+      final calories = (baseCalories + dayVariation + weeklyPattern).clamp(1500.0, 2800.0);
+
+      // Calculate macros with some realistic variation
+      final proteinPercent = 0.22 + ((random + i * 17) % 10 - 5) / 100; // 17-27%
+      final carbPercent = 0.45 + ((random + i * 23) % 15 - 7.5) / 100; // 37.5-52.5%
+      final fatPercent = 1.0 - proteinPercent - carbPercent; // Remainder
+
+      demoTrends.add({
+        'date': date,
+        'calories': calories,
+        'protein': (calories * proteinPercent / 4).roundToDouble(), // grams
+        'carbs': (calories * carbPercent / 4).roundToDouble(), // grams
+        'fat': (calories * fatPercent / 9).roundToDouble(), // grams
+        'meals': 2 + ((random + i * 41) % 3), // 2-4 meals per day
+      });
+    }
+
+    // Override the futures with demo data
+    _mealsFuture = Future.value(demoMeals);
+    _dailyNutritionFuture = Future.value(
+      demoMeals.fold(
+        const NutritionData(),
+        (total, meal) => total + meal.totalNutrition,
+      ) as NutritionData,
+    );
+    _nutritionTrendsFuture = Future.value(demoTrends);
+    _userRecipesFuture = Future.value([]); // No recipes for demo
   }
 
   void _loadMeals() {
@@ -707,31 +847,151 @@ class NutritionTrendsChart extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    // Sort trends by date to ensure proper ordering
+    final sortedTrends = List<Map<String, dynamic>>.from(trends)
+      ..sort((a, b) => (a['date'] as DateTime).compareTo(b['date'] as DateTime));
+
+    // Calculate min and max values for better scaling
+    final calories = sortedTrends.map((t) => t['calories'] as double).toList();
+    final minCalories = calories.reduce((a, b) => a < b ? a : b);
+    final maxCalories = calories.reduce((a, b) => a > b ? a : b);
+    final padding = (maxCalories - minCalories) * 0.1;
+
     return AppCard(
       child: SizedBox(
-        height: 200,
+        height: 220,
         child: LineChart(
           LineChartData(
-            gridData: FlGridData(show: false),
-            titlesData: FlTitlesData(show: false),
-            borderData: FlBorderData(show: false),
+            gridData: FlGridData(
+              show: true,
+              drawVerticalLine: false,
+              horizontalInterval: 200,
+              getDrawingHorizontalLine: (value) {
+                return FlLine(
+                  color: FitLifeTheme.dividerColor.withOpacity(0.3),
+                  strokeWidth: 1,
+                  dashArray: [5, 5],
+                );
+              },
+            ),
+            titlesData: FlTitlesData(
+              leftTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 40,
+                  interval: 200,
+                  getTitlesWidget: (value, meta) {
+                    return Text(
+                      '${value.toInt()}',
+                      style: FitLifeTheme.bodySmall.copyWith(
+                        color: FitLifeTheme.textSecondary,
+                        fontSize: 10,
+                      ),
+                    );
+                  },
+                ),
+              ),
+              bottomTitles: AxisTitles(
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 30,
+                  interval: 7, // Show every week
+                  getTitlesWidget: (value, meta) {
+                    final index = value.toInt();
+                    if (index >= 0 && index < sortedTrends.length) {
+                      final date = sortedTrends[index]['date'] as DateTime;
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          '${date.month}/${date.day}',
+                          style: FitLifeTheme.bodySmall.copyWith(
+                            color: FitLifeTheme.textSecondary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ),
+              rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            ),
+            borderData: FlBorderData(
+              show: true,
+              border: Border(
+                bottom: BorderSide(color: FitLifeTheme.dividerColor, width: 1),
+                left: BorderSide(color: FitLifeTheme.dividerColor, width: 1),
+              ),
+            ),
+            minX: 0,
+            maxX: (sortedTrends.length - 1).toDouble(),
+            minY: minCalories - padding,
+            maxY: maxCalories + padding,
             lineBarsData: [
               LineChartBarData(
-                spots: trends.asMap().entries.map((entry) {
+                spots: sortedTrends.asMap().entries.map((entry) {
                   final index = entry.key;
                   final data = entry.value;
-                  return FlSpot(index.toDouble(), (data['calories'] as num).toDouble());
+                  return FlSpot(index.toDouble(), data['calories'] as double);
                 }).toList(),
                 isCurved: true,
-                color: FitLifeTheme.accentGreen,
+                curveSmoothness: 0.3,
+                color: FitLifeTheme.accentPurple,
                 barWidth: 3,
-                dotData: FlDotData(show: false),
+                dotData: FlDotData(
+                  show: true,
+                  getDotPainter: (spot, percent, barData, index) {
+                    return FlDotCirclePainter(
+                      radius: 4,
+                      color: FitLifeTheme.accentPurple,
+                      strokeWidth: 2,
+                      strokeColor: FitLifeTheme.background,
+                    );
+                  },
+                ),
                 belowBarData: BarAreaData(
                   show: true,
-                  color: FitLifeTheme.accentGreen.withOpacity(0.1),
+                  color: FitLifeTheme.accentPurple.withOpacity(0.1),
+                  gradient: LinearGradient(
+                    colors: [
+                      FitLifeTheme.accentPurple.withOpacity(0.2),
+                      FitLifeTheme.accentPurple.withOpacity(0.05),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
                 ),
               ),
             ],
+            lineTouchData: LineTouchData(
+              touchTooltipData: LineTouchTooltipData(
+                getTooltipItems: (touchedSpots) {
+                  return touchedSpots.map((spot) {
+                    final index = spot.spotIndex;
+                    if (index >= 0 && index < sortedTrends.length) {
+                      final data = sortedTrends[index];
+                      final date = data['date'] as DateTime;
+                      final calories = data['calories'] as double;
+                      return LineTooltipItem(
+                        '${date.month}/${date.day}\n${calories.toInt()} cal',
+                        FitLifeTheme.bodySmall.copyWith(
+                          color: FitLifeTheme.primaryText,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      );
+                    }
+                    return null;
+                  }).whereType<LineTooltipItem>().toList();
+                },
+                tooltipBgColor: FitLifeTheme.surfaceColor,
+                tooltipBorder: BorderSide(
+                  color: FitLifeTheme.dividerColor,
+                  width: 1,
+                ),
+              ),
+            ),
           ),
         ),
       ),

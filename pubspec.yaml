@@ -1,5 +1,5 @@
-name: fitness_app
-description: A fitness app with Firebase authentication
+name: momentum
+description: Find Your Flow - A fitness app with Firebase authentication
 version: 1.0.0+1
 
 environment:
@@ -34,24 +34,24 @@ flutter:
   uses-material-design: true
   assets:
     - .env
-    - FitLife Logo with Green Graph.png
+    - momentum-logo.png
     - fitlife-logo.jpg
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "FitLife Logo with Green Graph.png"
+  image_path: "momentum-logo.png"
   min_sdk_android: 21
   web:
     generate: true
-    image_path: "FitLife Logo with Green Graph.png"
+    image_path: "momentum-logo.png"
     background_color: "#0D0D0D"
     theme_color: "#00FF85"
   windows:
     generate: true
-    image_path: "FitLife Logo with Green Graph.png"
+    image_path: "momentum-logo.png"
     icon_size: 48
 
 flutter_native_splash:
   color: "#0D0D0D"
-  image: FitLife Logo with Green Graph.png
+  image: momentum-logo.png

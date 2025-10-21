@@ -154,7 +154,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FitLife - Monochromatic Minimalism',
+      title: 'Momentum - Find Your Flow',
+      debugShowCheckedModeBanner: false, // Hide debug banner for clean screenshots
       theme: FitLifeTheme.themeData, // Use our monochromatic minimalism theme
       home: const AuthWrapper(), // Use auth-aware navigation
       routes: {
